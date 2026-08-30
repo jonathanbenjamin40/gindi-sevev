@@ -406,7 +406,7 @@ var users = [
   {username:"שרון", password:"1234", stations:[3,4], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
   {username:"חשבונות", password:"1234", stations:[5], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
   {username:"חשבים", password:"1234", stations:[6], display:"חשבים", email:"accountants@gindi.co.il"},
-  {username:"יוסי", password:"1234", stations:[5,6,7], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[5,6], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
+  {username:"יוסי", password:"1234", stations:[5,6,7], mineStations:[7], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[5,6], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
   {username:"אבי", password:"1234", stations:[8], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
   {username:"רועי", password:"1234", stations:[8], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
   {username:"ברק", password:"1234", stations:[8], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
@@ -772,7 +772,8 @@ function renderTab2(){
     var matchQ = !q || (r.proj+r.unit+r.client+r.id).indexOf(q) !== -1;
     var matchP = !pf || r.proj === pf;
     var matchSeg = segFilter === "all" || segFilter === r.status;
-    var matchMine = viewMode !== "mine" || (currentUser.stations.indexOf(r.checkCur) !== -1 && r.status === "open");
+    var mineStations = currentUser.mineStations || currentUser.stations;
+    var matchMine = viewMode !== "mine" || (mineStations.indexOf(r.checkCur) !== -1 && r.status === "open");
     var matchResp = viewMode !== "responsibility" || (currentUser.responsibilityStations && currentUser.responsibilityStations.indexOf(r.checkCur) !== -1 && r.status === "open");
     return matchQ && matchP && matchSeg && matchMine && matchResp;
   });
