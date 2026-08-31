@@ -396,15 +396,22 @@ var checkStages = [
 /* Checklist infrastructure — items are placeholders until Yossi defines the real lists.
    Keyed by station index; a station without an entry here has no checklist gate. */
 var checklists = {
-  5: ["פריט בדיקה לדוגמה 1 — הנהלת חשבונות", "פריט בדיקה לדוגמה 2 — הנהלת חשבונות"],
-  6: ["פריט בדיקה לדוגמה 1 — חשבים", "פריט בדיקה לדוגמה 2 — חשבים"]
+  5: [
+    "לוודא ולעדכן מס' מחסנים וחניות שנרכשו",
+    "לרשום האם ישנה הלוואת קרדיט ואם כן מה הסכום ולאיזו תקופה",
+    "לאשר שהחוזה ננעל במערכת"
+  ],
+  6: [
+    "לרשום מה מחיר הסף ומה ההפרש ממחיר הסף",
+    "לוודא ולאשר שהמצ\"ח תואם לנספח התשלומים בהסכם המכר"
+  ]
 };
 
 var users = [
   {username:"מזכירות", password:"1234", stations:[0,1,2,9], display:"מזכירות", email:"secretary@gindi.co.il"},
   {username:"דיירים", password:"1234", stations:[3], display:"מחלקת דיירים", email:"tenants@gindi.co.il"},
   {username:"שרון", password:"1234", stations:[3,4], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
-  {username:"חשבונות", password:"1234", stations:[5], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
+  {username:"הנהח", password:"1234", stations:[5], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
   {username:"חשבים", password:"1234", stations:[6], display:"חשבים", email:"accountants@gindi.co.il"},
   {username:"יוסי", password:"1234", stations:[5,6,7], mineStations:[7], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[5,6], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
   {username:"אבי", password:"1234", stations:[8], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
@@ -637,7 +644,7 @@ function openApproveModal(r, stageIndex){
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
     extraHtml+
     checklistHtml+
-    '<div class="modal-field"><label>הערות</label><textarea id="mRemarks" rows="2" placeholder="אופציונלי"></textarea></div>'+
+    '<div class="modal-field"><label>מלל כללי / הערות</label><textarea id="mRemarks" rows="3" placeholder="אופציונלי — כאן ניתן לרשום פרטים חופשיים, כולל תשובות מהצ\'ק ליסט למעלה"></textarea></div>'+
     '<div class="modal-actions"><button class="modal-cancel" id="mCancel">לא, בטל</button><button class="modal-confirm" id="mConfirm"'+(checklist?" disabled":"")+'>כן, מאשר</button></div>';
   document.getElementById("modalBox").innerHTML = html;
   document.getElementById("modalOverlay").classList.add("active");
