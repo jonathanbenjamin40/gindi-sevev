@@ -225,9 +225,19 @@
   .modal-box p strong{color:var(--ink);}
   .modal-field{margin-bottom:14px;}
   .modal-field label{font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;}
-  .checklist{display:flex; flex-direction:column; gap:8px; margin-top:2px;}
-  .checklist-item{display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--ink); cursor:pointer;}
-  .checklist-item input{width:auto; margin-top:3px;}
+  .checklist{display:flex; flex-direction:column; gap:2px; margin-top:2px;}
+  .checklist-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .checklist-row:last-child{border-bottom:none;}
+  .cl-label{flex:1; font-size:13px; color:var(--ink);}
+  .cl-toggle-label{font-size:10.5px; color:var(--ink-faint); white-space:nowrap;}
+  .cl-input{width:110px !important; flex-shrink:0; border:none; border-bottom:1px dashed var(--ink-faint); background:transparent; font-family:'Heebo', sans-serif; font-size:13px; color:var(--ink); padding:4px 0 !important; outline:none;}
+  .cl-input:focus{border-bottom-color:var(--ink); border-bottom-style:solid;}
+  .toggle{position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; cursor:pointer;}
+  .toggle input{opacity:0 !important; width:0 !important; height:0 !important; position:absolute !important; padding:0 !important; margin:0 !important;}
+  .toggle-track{position:absolute; inset:0; background:var(--line-strong); border-radius:20px; transition:background .15s;}
+  .toggle-track:before{content:""; position:absolute; width:14px; height:14px; right:3px; top:3px; background:#fff; border-radius:50%; transition:transform .15s; box-shadow:0 1px 2px rgba(0,0,0,.25);}
+  .toggle input:checked + .toggle-track{background:var(--ok);}
+  .toggle input:checked + .toggle-track:before{transform:translateX(-16px);}
   .modal-field input, .modal-field select, .modal-field textarea{
     width:100%; border:none; border-bottom:1px solid var(--line-strong); background:transparent;
     font-family:'Heebo', sans-serif; font-size:13.5px; color:var(--ink); padding:6px 0; outline:none; resize:none;
@@ -386,8 +396,8 @@ var checkStages = [
   {role:"מזכירות", task:"הכנת הסכם לחתימה", extra:[]},
   {role:"מחלקת דיירים", task:"הזנת תוספות ופנקס שוברים", extra:["תוספות שנרשמו"]},
   {role:"סמנכ\"לית שירות ודיירים", task:"אישור שינויים", extra:["עלות שינויים"]},
-  {role:"הנהלת חשבונות", task:"בדיקת נתוני משכנתא", extra:["נעילת חוזה","מפרט","קרדיט","מחסן"]},
-  {role:"חשבים", task:"בדיקת נספח תשלומים", extra:["מחיר מחירון","מחיר סף"]},
+  {role:"הנהלת חשבונות", task:"בדיקת נתוני משכנתא", extra:[]},
+  {role:"חשבים", task:"בדיקת נספח תשלומים", extra:[]},
   {role:"סמנכ\"ל כספים", task:"אישור סופי של ההסכם", extra:[]},
   {role:"מנכ\"ל", task:"חתימה סופית על החוזה", extra:[]},
   {role:"מזכירות", task:"הפצת החוזה ורישום", extra:[]}
@@ -395,15 +405,21 @@ var checkStages = [
 
 /* Checklist infrastructure — items are placeholders until Yossi defines the real lists.
    Keyed by station index; a station without an entry here has no checklist gate. */
+/* Checklist infrastructure — each item renders on its own row.
+   type: "text" (blank line to fill), "toggle" (on/off confirmation),
+   or "text+toggle" (a value plus a separate system-update confirmation). */
 var checklists = {
   5: [
-    "לוודא ולעדכן מס' מחסנים וחניות שנרכשו",
-    "לרשום האם ישנה הלוואת קרדיט ואם כן מה הסכום ולאיזו תקופה",
-    "לאשר שהחוזה ננעל במערכת"
+    {type:"text", label:"מחיר מחירון"},
+    {type:"text", label:"מחיר סף"},
+    {type:"text+toggle", label:"מספר מחסנים שנרכשו", toggleLabel:"עודכן במערכות"},
+    {type:"text+toggle", label:"מספר חניות שנרכשו", toggleLabel:"עודכן במערכות"},
+    {type:"toggle", label:"אישור חוזה נעול במערכות כספים"}
   ],
   6: [
-    "לרשום מה מחיר הסף ומה ההפרש ממחיר הסף",
-    "לוודא ולאשר שהמצ\"ח תואם לנספח התשלומים בהסכם המכר"
+    {type:"text", label:"מחיר סף"},
+    {type:"text", label:"הפרש ממחיר הסף"},
+    {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
   ]
 };
 
@@ -447,7 +463,8 @@ var reviewData = [
   {id:"GND-1045", proj:"גינדי קריית אונו", unit:"בניין C · דירה 21", client:"נועה אברהם", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-12*HOUR, stationEnteredAt:NOW-12*HOUR},
   {id:"GND-1046", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 07", client:"איתי פרידמן", checkCur:5, status:"returned", viewed:true, docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY,
     history:[], returnInfo:{roleLabel:"מחלקת דיירים", target:"משפטית", note:"אי-התאמה בין ההסכם לנספח — נמכר מחסן אך בהסכם נרשם שלא נמכר", date:"15.08.2026"}},
-  {id:"GND-1047", proj:"גינדי TLV", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR}
+  {id:"GND-1047", proj:"גינדי TLV", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
+  {id:"GND-1048", proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", client:"עומר בן-דוד", checkCur:5, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-1*DAY-6*HOUR}
 ];
 
 var allUnits = [
@@ -635,7 +652,18 @@ function openApproveModal(r, stageIndex){
   if(checklist){
     checklistHtml += '<div class="modal-field"><label>צ\'ק ליסט לתחנה (יש להשלים הכל לפני אישור)</label><div class="checklist">';
     checklist.forEach(function(item,i){
-      checklistHtml += '<label class="checklist-item"><input type="checkbox" class="mChecklistItem" data-i="'+i+'"> <span>'+item+'</span></label>';
+      if(item.type === "toggle"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<label class="toggle"><input type="checkbox" class="mClToggle" data-i="'+i+'"><span class="toggle-track"></span></label></div>';
+      } else if(item.type === "text+toggle"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<input type="text" class="cl-input mClText" data-i="'+i+'" placeholder="—">'+
+          '<label class="toggle" title="'+item.toggleLabel+'"><input type="checkbox" class="mClToggle" data-i="'+i+'"><span class="toggle-track"></span></label>'+
+          '<span class="cl-toggle-label">'+item.toggleLabel+'</span></div>';
+      } else {
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<input type="text" class="cl-input mClText" data-i="'+i+'" placeholder="—"></div>';
+      }
     });
     checklistHtml += '</div></div>';
   }
@@ -644,28 +672,53 @@ function openApproveModal(r, stageIndex){
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
     extraHtml+
     checklistHtml+
-    '<div class="modal-field"><label>מלל כללי / הערות</label><textarea id="mRemarks" rows="3" placeholder="אופציונלי — כאן ניתן לרשום פרטים חופשיים, כולל תשובות מהצ\'ק ליסט למעלה"></textarea></div>'+
+    '<div class="modal-field"><label>מלל כללי / הערות</label><textarea id="mRemarks" rows="3" placeholder="אופציונלי — כאן ניתן לרשום פרטים חופשיים נוספים"></textarea></div>'+
     '<div class="modal-actions"><button class="modal-cancel" id="mCancel">לא, בטל</button><button class="modal-confirm" id="mConfirm"'+(checklist?" disabled":"")+'>כן, מאשר</button></div>';
   document.getElementById("modalBox").innerHTML = html;
   document.getElementById("modalOverlay").classList.add("active");
   document.getElementById("mCancel").addEventListener("click", closeModal);
   var confirmBtn = document.getElementById("mConfirm");
   if(checklist){
-    var boxes = document.querySelectorAll(".mChecklistItem");
-    boxes.forEach(function(box){
-      box.addEventListener("change", function(){
-        var allChecked = Array.prototype.every.call(boxes, function(b){ return b.checked; });
-        confirmBtn.disabled = !allChecked;
+    var checkComplete = function(){
+      var complete = checklist.every(function(item,i){
+        if(item.type === "toggle"){
+          var t = document.querySelector('.mClToggle[data-i="'+i+'"]');
+          return t && t.checked;
+        }
+        if(item.type === "text+toggle"){
+          var txt = document.querySelector('.mClText[data-i="'+i+'"]');
+          var tog = document.querySelector('.mClToggle[data-i="'+i+'"]');
+          return txt && txt.value.trim() !== "" && tog && tog.checked;
+        }
+        var input = document.querySelector('.mClText[data-i="'+i+'"]');
+        return input && input.value.trim() !== "";
       });
-    });
+      confirmBtn.disabled = !complete;
+    };
+    document.querySelectorAll(".mClToggle").forEach(function(el){ el.addEventListener("change", checkComplete); });
+    document.querySelectorAll(".mClText").forEach(function(el){ el.addEventListener("input", checkComplete); });
   }
   confirmBtn.addEventListener("click", function(){
     var extras = s.extra.map(function(f,i){
       var v = document.getElementById("mExtra_"+i).value.trim();
       return v ? (f+": "+v) : null;
     }).filter(Boolean).join(" · ");
+    var checklistSummary = "";
+    if(checklist){
+      checklistSummary = checklist.map(function(item,i){
+        if(item.type === "toggle"){
+          return item.label+": בוצע";
+        }
+        if(item.type === "text+toggle"){
+          var txt = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
+          return item.label+": "+txt+" ("+item.toggleLabel+" ✓)";
+        }
+        var input = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
+        return item.label+": "+input;
+      }).join(" · ");
+    }
     var remarks = document.getElementById("mRemarks").value.trim();
-    var note = [extras, remarks].filter(Boolean).join(" — ") || "ללא הערות";
+    var note = [extras, checklistSummary, remarks].filter(Boolean).join(" — ") || "ללא הערות";
     r.history.push({stageIndex:stageIndex, role:s.role, task:s.task, date:new Date().toLocaleDateString("he-IL"), note:note});
     r.checkCur = Math.min(r.checkCur + 1, checkStages.length);
     r.stationEnteredAt = Date.now();
