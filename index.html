@@ -532,7 +532,9 @@ var reviewData = [
   {id:"GND-1060", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 10", client:"ליאור בר", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-11*DAY, stationEnteredAt:NOW-2*DAY},
   {id:"GND-1061", proj:"פארק גינדי ראשון לציון", unit:"בניין C · דירה 08", client:"עדי טל", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-10*HOUR},
   {id:"GND-1062", proj:"גליל ים", unit:"בניין C · דירה 30", client:"אורי נחום", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-1*DAY-8*HOUR},
-  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR}
+  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR},
+  {id:"GND-1064", proj:"גליל ים", unit:"בניין C · דירה 05", client:"נועם רזון", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-9*HOUR, listPriceEntered:2340000, floorPriceEntered:2280000},
+  {id:"GND-1065", proj:"גינדי קריית אונו", unit:"בניין A · דירה 11", client:"דנה אור", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-11*HOUR, listPriceEntered:1750000, floorPriceEntered:1700000}
 ];
 
 var allUnits = [
@@ -550,14 +552,16 @@ var priceList = [
   {proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", price:2100000},
   {proj:"גליל ים", unit:"בניין A · דירה 12", price:1990000},
   {proj:"גליל ים", unit:"בניין B · דירה 19", price:2050000},
-  {proj:"גליל ים", unit:"בניין A · דירה 14", price:1920000}
+  {proj:"גליל ים", unit:"בניין A · דירה 14", price:1920000},
+  {proj:"גליל ים", unit:"בניין C · דירה 05", price:2200000},
+  {proj:"גינדי קריית אונו", unit:"בניין A · דירה 11", price:1750000}
 ];
 
 var currentUser = null;
 var expanded = {};
 var segFilter = "all";
 var viewMode = "mine";
-var caseCounter = 1063;
+var caseCounter = 1065;
 
 function isOnVacation(u){
   if(!u || !u.vacation || !u.vacation.active) return false;
@@ -988,6 +992,7 @@ function renderCeo(){
         '<div class="ceo-row-id">'+r.id+'</div>'+
         '<div class="ceo-row-title">'+r.proj+' · '+r.unit+'</div>'+
         '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 7 התחנות הקודמות אושרו</div>'+
+        priceStatusBadgeHtml(r)+
       '</div>'+
       '<div class="ceo-row-actions">'+
         accBtn+
@@ -1218,7 +1223,7 @@ function renderTab2(){
       '<td style="font-weight:500;">'+pct+'%</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.stationEnteredAt)+'</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.openedAt)+'</td>'+
-      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+statusDot+'"></span>'+statusLabel+'</span></td>'+
+      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+statusDot+'"></span>'+statusLabel+'</span>'+priceStatusBadgeHtml(r)+'</td>'+
       '<td>'+actionCell+'</td>';
     tr.addEventListener("click", function(){
       expanded[r.id] = !expanded[r.id];
@@ -1356,6 +1361,30 @@ function renderTab3(){
 }
 
 /* ---------- PRICE LIST (מחירון חברה) ---------- */
+function getCasePriceStatus(r){
+  var pl = priceList.filter(function(p){ return p.proj === r.proj && p.unit === r.unit; })[0];
+  if(!pl) return null; // no price defined for this unit — nothing to compare, don't show a badge
+  if(r.listPriceEntered === undefined || r.listPriceEntered === null || r.listPriceEntered === ""){
+    return {state:"pending"};
+  }
+  var ok = Number(r.listPriceEntered) === Number(pl.price);
+  if(!ok && r.checkCur > CEO_STATION_INDEX){
+    return {state:"override", listPrice:pl.price};
+  }
+  return {state: ok ? "ok" : "mismatch", listPrice:pl.price};
+}
+
+function priceStatusBadgeHtml(r){
+  var st = getCasePriceStatus(r);
+  if(!st) return "";
+  var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
+  var label = st.state === "ok" ? "תקין — תואם למחירון"
+    : st.state === "mismatch" ? "לא תקין — אי-התאמה"
+    : st.state === "override" ? "אושר עי מנכ\"ל למרות אי-התאמה"
+    : "טרם דווח מחיר בסבב";
+  return '<div class="status" style="margin-top:5px;"><span class="dot '+dot+'"></span>'+label+'</div>';
+}
+
 function getPriceStatus(plRow){
   var match = reviewData.filter(function(r){
     return r.proj === plRow.proj && r.unit === plRow.unit && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
