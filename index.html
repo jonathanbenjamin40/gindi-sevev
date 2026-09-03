@@ -203,18 +203,21 @@
   .legend .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-left:5px;}
   footer{text-align:center; padding:24px; font-size:11px; color:var(--ink-faint);}
 
-  /* ---------- CEO CARDS ---------- */
+  /* ---------- CEO ROWS ---------- */
   .ceo-empty{padding:60px 20px; text-align:center; color:var(--ink-faint); font-size:14px;}
-  .ceo-card{border:1px solid var(--line); border-radius:6px; padding:28px 32px; margin-bottom:18px; max-width:560px;}
-  .ceo-card .ceo-id{font-family:monospace; font-size:12px; color:var(--ink-faint); margin-bottom:6px;}
-  .ceo-card h3{font-size:20px; margin-bottom:4px;}
-  .ceo-card .ceo-sub{font-size:13px; color:var(--ink-soft); margin-bottom:20px;}
-  .ceo-card .ceo-btn{
-    width:100%; height:46px; background:var(--ink); color:var(--bg); border:none; border-radius:var(--radius);
-    font-size:14px; font-family:'Heebo', sans-serif; cursor:pointer; letter-spacing:.02em;
+  .ceo-row{display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 18px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .ceo-row:first-child{border-top:1px solid var(--line);}
+  .ceo-row-id{font-family:monospace; font-size:11px; color:var(--ink-faint); margin-bottom:3px;}
+  .ceo-row-title{font-family:'Frank Ruhl Libre', serif; font-size:16px; font-weight:500; color:var(--ink);}
+  .ceo-row-sub{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .ceo-row-actions{display:flex; gap:8px; flex-shrink:0;}
+  .ceo-btn{
+    height:38px; padding:0 18px; background:var(--ink); color:var(--bg); border:none; border-radius:var(--radius);
+    font-size:13px; font-family:'Heebo', sans-serif; cursor:pointer; letter-spacing:.01em; white-space:nowrap;
   }
-  .ceo-card .ceo-btn:hover{background:#333;}
-  .ceo-viewall{display:inline-block; margin-top:6px; font-size:12.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer;}
+  .ceo-btn:hover{background:#333;}
+  .ceo-return-btn{height:38px; white-space:nowrap;}
+  .ceo-viewall{display:inline-block; margin-top:14px; font-size:12.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer;}
 
   /* ---------- MODAL ---------- */
   #modalOverlay{display:none; position:fixed; inset:0; background:rgba(17,17,17,.35); align-items:center; justify-content:center; z-index:50;}
@@ -473,7 +476,16 @@ var reviewData = [
   {id:"GND-1051", proj:"גינדי קריית אונו", unit:"בניין A · דירה 05", client:"שירה כץ", checkCur:2, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY},
   {id:"GND-1052", proj:"גליל ים", unit:"בניין B · דירה 22", client:"יאיר שלום", checkCur:4, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-2*DAY},
   {id:"GND-1053", proj:"פארק גינדי ראשון לציון", unit:"בניין B · דירה 14", client:"מאיה אביטן", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-2*DAY-4*HOUR},
-  {id:"GND-1054", proj:"גינדי הוד השרון", unit:"בניין A · דירה 17", client:"תום לוגסי", checkCur:9, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-10*DAY, stationEnteredAt:NOW-5*HOUR}
+  {id:"GND-1054", proj:"גינדי הוד השרון", unit:"בניין A · דירה 17", client:"תום לוגסי", checkCur:9, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-10*DAY, stationEnteredAt:NOW-5*HOUR},
+  {id:"GND-1055", proj:"גליל ים", unit:"בניין A · דירה 04", client:"רותם אזולאי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-8*DAY, stationEnteredAt:NOW-1*DAY},
+  {id:"GND-1056", proj:"גליל ים", unit:"בניין B · דירה 12", client:"נדב פרץ", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-1*DAY-3*HOUR},
+  {id:"GND-1057", proj:"גינדי הוד השרון", unit:"בניין C · דירה 02", client:"קרן שגיא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-16*HOUR},
+  {id:"GND-1058", proj:"גינדי קריית אונו", unit:"בניין A · דירה 18", client:"איתמר כהן", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY-2*HOUR},
+  {id:"GND-1059", proj:"גינדי קריית אונו", unit:"בניין B · דירה 06", client:"מור אשכנזי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-20*HOUR},
+  {id:"GND-1060", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 10", client:"ליאור בר", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-11*DAY, stationEnteredAt:NOW-2*DAY},
+  {id:"GND-1061", proj:"פארק גינדי ראשון לציון", unit:"בניין C · דירה 08", client:"עדי טל", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-10*HOUR},
+  {id:"GND-1062", proj:"גליל ים", unit:"בניין C · דירה 30", client:"אורי נחום", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-1*DAY-8*HOUR},
+  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR}
 ];
 
 var allUnits = [
@@ -488,7 +500,7 @@ var currentUser = null;
 var expanded = {};
 var segFilter = "all";
 var viewMode = "mine";
-var caseCounter = 1054;
+var caseCounter = 1063;
 
 function canAct(r){
   return currentUser && currentUser.stations.indexOf(r.checkCur) !== -1 && r.status === "open";
@@ -772,17 +784,24 @@ function renderCeo(){
   wrap.innerHTML = "";
   if(pending.length === 0){
     wrap.innerHTML = '<div class="ceo-empty">אין כרגע תיקים הממתינים לחתימתך</div>';
+    return;
   }
   pending.forEach(function(r){
-    var card = document.createElement("div");
-    card.className = "ceo-card";
-    card.innerHTML =
-      '<div class="ceo-id">'+r.id+'</div>'+
-      '<h3>'+r.proj+' · '+r.unit+'</h3>'+
-      '<div class="ceo-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 8 התחנות הקודמות אושרו</div>'+
-      '<button class="ceo-btn">אשר חתימה סופית</button>';
-    card.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 8); });
-    wrap.appendChild(card);
+    var row = document.createElement("div");
+    row.className = "ceo-row";
+    row.innerHTML =
+      '<div class="ceo-row-text">'+
+        '<div class="ceo-row-id">'+r.id+'</div>'+
+        '<div class="ceo-row-title">'+r.proj+' · '+r.unit+'</div>'+
+        '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 8 התחנות הקודמות אושרו</div>'+
+      '</div>'+
+      '<div class="ceo-row-actions">'+
+        '<button class="ceo-btn">אשר חתימה סופית</button>'+
+        '<button class="reject-btn ceo-return-btn">החזר חוזה לסבב</button>'+
+      '</div>';
+    row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 8); });
+    row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, 8); });
+    wrap.appendChild(row);
   });
 }
 document.getElementById("ceoViewAll").addEventListener("click", function(){
