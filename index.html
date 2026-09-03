@@ -846,7 +846,7 @@ function openApproveModal(r, stageIndex, opts){
   }
   var titleText = opts.proxy ? "אישור ממלא מקום מנכ״ל" : "אישור תחנה";
   var proxyNote = opts.proxy ? '<p style="color:var(--ink-soft); font-size:12px; margin-top:-10px;">המנכ״ל בנוהל חול — האישור יתועד כאישור ממלא מקום.</p>' : "";
-  var priceNote = getCasePriceStatus(r) ? '<div class="modal-field"><label>מצב מול מחירון החברה</label>'+priceStatusBadgeHtml(r)+'</div>' : "";
+  var priceNote = canSeePricing() ? '<div class="modal-field"><label>מצב מול מחירון החברה</label>'+priceStatusBadgeHtml(r)+'</div>' : "";
   var html =
     '<h3>'+titleText+'</h3>'+
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
@@ -1365,7 +1365,7 @@ function renderTab3(){
 /* ---------- PRICE LIST (מחירון חברה) ---------- */
 function getCasePriceStatus(r){
   var pl = priceList.filter(function(p){ return p.proj === r.proj && p.unit === r.unit; })[0];
-  if(!pl) return null; // no price defined for this unit — nothing to compare, don't show a badge
+  if(!pl) return {state:"nodata"};
   if(r.listPriceEntered === undefined || r.listPriceEntered === null || r.listPriceEntered === ""){
     return {state:"pending"};
   }
@@ -1375,15 +1375,19 @@ function getCasePriceStatus(r){
   }
   return {state: ok ? "ok" : "mismatch", listPrice:pl.price};
 }
+function canSeePricing(){
+  return !!(currentUser && (currentUser.ceo || currentUser.username === "יוסי"));
+}
 
 function priceStatusBadgeHtml(r){
+  if(!canSeePricing()) return "";
   var st = getCasePriceStatus(r);
-  if(!st) return "";
   var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
   var label = st.state === "ok" ? "תקין — תואם למחירון"
     : st.state === "mismatch" ? "לא תקין — אי-התאמה"
     : st.state === "override" ? "אושר עי מנכ\"ל למרות אי-התאמה"
-    : "טרם דווח מחיר בסבב";
+    : st.state === "pending" ? "טרם דווח מחיר בסבב"
+    : "אין נתון מחירון לדירה זו";
   return '<div class="status" style="margin-top:5px;"><span class="dot '+dot+'"></span>'+label+'</div>';
 }
 
