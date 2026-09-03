@@ -448,6 +448,10 @@ function toFileUrl(p){
   });
   return 'file:///' + parts.join('/');
 }
+function toLocalExplorerUrl(p){
+  // "Local Explorer - File Manager" Chrome/Edge extension: custom scheme + raw Windows path
+  return 'localexplorer:' + p;
+}
 function formatDuration(ms){
   if(ms < 0) ms = 0;
   var mins = Math.floor(ms/60000);
@@ -871,7 +875,7 @@ function renderTab2(){
     var isOpen = !!expanded[r.id];
     var statusLabel = r.status === "closed" ? "סגור" : (r.status === "returned" ? "הוחזר לתיקון" : "פתוח");
     var statusDot = r.status === "closed" ? "ok" : (r.status === "returned" ? "bad" : "warn");
-    var fileHref = toFileUrl(r.docPath);
+    var fileHref = toLocalExplorerUrl(r.docPath);
 
     var actionCell;
     if(flashApproved[r.id]){
