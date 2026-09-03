@@ -124,6 +124,13 @@
   tbody tr:last-child td{border-bottom:none;}
   tbody tr.rowclick{cursor:pointer;}
   tbody tr.rowclick:hover{background:#FAFAFA;}
+  tbody tr.proxy-row{background:#F1F1F1;}
+  tbody tr.proxy-row:hover{background:#E9E9E9;}
+  .vacation-banner{display:flex; gap:8px; align-items:flex-start; padding:12px 14px; border-right:2px solid var(--ink); background:#F5F5F5; font-size:13px; color:var(--ink); margin-bottom:18px;}
+  .vacation-controls{display:flex; align-items:center; gap:10px; margin-bottom:18px; font-size:12.5px; color:var(--ink-soft);}
+  .vacation-btn{height:32px; padding:0 14px; font-size:12.5px; background:transparent; border:1px solid var(--line-strong); border-radius:var(--radius); color:var(--ink); cursor:pointer; font-family:'Heebo', sans-serif;}
+  .vacation-btn:hover{border-color:var(--ink);}
+  .vacation-end-btn{height:32px; padding:0 14px; font-size:12.5px; background:var(--ink); color:var(--bg); border:none; border-radius:var(--radius); cursor:pointer; font-family:'Heebo', sans-serif;}
   .unit-sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
   .doc-path{font-size:10.5px; color:var(--ink-faint); margin-top:3px; direction:ltr; text-align:right;}
 
@@ -311,6 +318,7 @@
           <p>תיקים הממתינים לחתימה סופית על החוזה</p>
         </div>
       </div>
+      <div id="ceoVacation"></div>
       <div id="ceoCards"></div>
       <span class="ceo-viewall" id="ceoViewAll">צפייה בכל התיקים בסבב ←</span>
     </section>
@@ -319,9 +327,10 @@
       <div class="panel-head">
         <div>
           <h2 id="cycleTitle">סבב בדיקות</h2>
-          <p id="cycleSubtitle">דירות שנמכרו ונכנסו לסבב הבדיקה — 10 תחנות אישור לפי תפקיד</p>
+          <p id="cycleSubtitle">דירות שנמכרו ונכנסו לסבב הבדיקה — 9 תחנות אישור לפי תפקיד</p>
         </div>
       </div>
+      <div id="yossiVacationBanner"></div>
 
       <div class="kpis">
         <div class="kpi"><span class="num" id="statTotal">–</span><span class="label">סה״כ בסבב</span></div>
@@ -383,6 +392,32 @@
       </table>
     </section>
 
+    <section id="pricelist-view" class="view">
+      <div class="panel-head">
+        <div>
+          <h2>מחירון חברה</h2>
+          <p>מחיר המחירון הרשמי לכל דירה, מול המחיר שדווח בפועל בסבב הבדיקות</p>
+        </div>
+      </div>
+      <div class="filters">
+        <input type="text" id="searchPL" placeholder="חיפוש לפי פרויקט או דירה">
+        <select id="filterProjPL"><option value="">כל הפרויקטים</option></select>
+      </div>
+      <div id="plAddForm" class="upload-box" style="align-items:flex-end; flex-wrap:wrap; gap:12px;"></div>
+      <table>
+        <thead>
+          <tr><th>פרויקט</th><th>דירה</th><th>מחיר מחירון</th><th style="text-align:center;">מצב</th><th></th></tr>
+        </thead>
+        <tbody id="tbodyPL"></tbody>
+      </table>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--ok);"></span>תקין — תואם למחירון</span>
+        <span><span class="dot" style="background:var(--bad);"></span>לא תקין — אי-התאמה</span>
+        <span><span class="dot" style="background:var(--warn);"></span>אושר עי מנכ"ל למרות אי-התאמה</span>
+        <span><span class="dot" style="background:var(--ink-faint);"></span>טרם דווח מחיר בסבב</span>
+      </div>
+    </section>
+
   </main>
 
   <footer>ניהול סבב בדיקות · גינדי החזקות — מוקאפ עיצובי לצורכי בחינת תהליך</footer>
@@ -394,16 +429,15 @@
 var projects = ["גליל ים", "גינדי הוד השרון", "גינדי קריית אונו", "פארק גינדי ראשון לציון"];
 
 var checkStages = [
-  {role:"מזכירות", task:"דיווח למשרד השיכון", extra:[]},
-  {role:"מזכירות", task:"סריקת חוזה", extra:[]},
-  {role:"מזכירות", task:"הכנת הסכם לחתימה", extra:[]},
+  {role:"רכזת חוזים", task:"דיווח למשרד השיכון", extra:[]},
+  {role:"דיירים", task:"הזנת נתוני הסכם ותוספות", extra:[]},
   {role:"מחלקת דיירים", task:"הזנת תוספות ופנקס שוברים", extra:["תוספות שנרשמו"]},
   {role:"סמנכ\"לית שירות ודיירים", task:"אישור שינויים", extra:["עלות שינויים"]},
   {role:"הנהלת חשבונות", task:"בדיקת נתוני משכנתא", extra:[]},
   {role:"חשבים", task:"בדיקת נספח תשלומים", extra:[]},
   {role:"סמנכ\"ל כספים", task:"אישור סופי של ההסכם", extra:[]},
   {role:"מנכ\"ל", task:"חתימה סופית על החוזה", extra:[]},
-  {role:"מזכירות", task:"הפצת החוזה ורישום", extra:[]}
+  {role:"סמנכ\"לית שירות ודיירים", task:"הפצת החוזה ובקרה אחרונה", extra:[]}
 ];
 
 /* Checklist infrastructure — items are placeholders until Yossi defines the real lists.
@@ -412,31 +446,33 @@ var checkStages = [
    type: "text" (blank line to fill), "toggle" (on/off confirmation),
    or "text+toggle" (a value plus a separate system-update confirmation). */
 var checklists = {
-  5: [
-    {type:"text", label:"מחיר מחירון"},
-    {type:"text", label:"מחיר סף"},
+  4: [
+    {type:"number", label:"מחיר מחירון", field:"listPriceEntered"},
+    {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"text+toggle", label:"מספר מחסנים שנרכשו", toggleLabel:"עודכן במערכות"},
     {type:"text+toggle", label:"מספר חניות שנרכשו", toggleLabel:"עודכן במערכות"},
-    {type:"toggle", label:"אישור חוזה נעול במערכות כספים"}
+    {type:"toggle", label:"אישור חוזה נעול במערכות כספים"},
+    {type:"link", label:"קישור למצב חשבון (Google Drive)", field:"accountStatusUrl"}
   ],
-  6: [
-    {type:"text", label:"מחיר סף"},
+  5: [
+    {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"text", label:"הפרש ממחיר הסף"},
-    {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
+    {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"},
+    {type:"link", label:"קישור למצב חשבון (Google Drive)", field:"accountStatusUrl"}
   ]
 };
 
 var users = [
-  {username:"מזכירות", password:"1234", stations:[0,1,2,9], display:"מזכירות", email:"secretary@gindi.co.il"},
-  {username:"דיירים", password:"1234", stations:[3], display:"מחלקת דיירים", email:"tenants@gindi.co.il"},
-  {username:"שרון", password:"1234", stations:[3,4], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
-  {username:"הנהח", password:"1234", stations:[5], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
-  {username:"חשבים", password:"1234", stations:[6], display:"חשבים", email:"accountants@gindi.co.il"},
-  {username:"יוסי", password:"1234", stations:[5,6,7], mineStations:[7], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[5,6], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
-  {username:"אבי", password:"1234", stations:[8], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
-  {username:"רועי", password:"1234", stations:[8], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
-  {username:"ברק", password:"1234", stations:[8], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
-  {username:"גונתן", password:"1234", stations:[8], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
+  {username:"רכזת חוזים", password:"1234", stations:[0], display:"רכזת חוזים", email:"secretary@gindi.co.il"},
+  {username:"דיירים", password:"1234", stations:[1,2], display:"מחלקת דיירים", email:"tenants@gindi.co.il"},
+  {username:"שרון", password:"1234", stations:[1,2,3,8], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
+  {username:"הנהח", password:"1234", stations:[4], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
+  {username:"חשבים", password:"1234", stations:[5], display:"חשבים", email:"accountants@gindi.co.il"},
+  {username:"יוסי", password:"1234", stations:[4,5,6], mineStations:[6], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[4,5], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
+  {username:"אבי", password:"1234", stations:[7], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
+  {username:"רועי", password:"1234", stations:[7], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
+  {username:"ברק", password:"1234", stations:[7], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
+  {username:"גונתן", password:"1234", stations:[7], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
 ];
 
 var testDocPath = "Z:\\ג'ונתן בנימין";
@@ -467,29 +503,29 @@ var NOW = Date.now();
 var DAY = 86400000, HOUR = 3600000;
 
 var reviewData = [
-  {id:"GND-1042", proj:"גליל ים", unit:"בניין A · דירה 12", client:"דוד כהן", checkCur:10, status:"closed", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-14*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1043", proj:"גליל ים", unit:"בניין A · דירה 14", client:"מיכל לוי", checkCur:3, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY-4*HOUR},
-  {id:"GND-1044", proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", client:"רון ישראלי", checkCur:6, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-3*DAY},
+  {id:"GND-1042", proj:"גליל ים", unit:"בניין A · דירה 12", client:"דוד כהן", checkCur:9, status:"closed", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-14*DAY, stationEnteredAt:NOW-1*DAY},
+  {id:"GND-1043", proj:"גליל ים", unit:"בניין A · דירה 14", client:"מיכל לוי", checkCur:2, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY-4*HOUR},
+  {id:"GND-1044", proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", client:"רון ישראלי", checkCur:5, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-3*DAY},
   {id:"GND-1045", proj:"גינדי קריית אונו", unit:"בניין C · דירה 21", client:"נועה אברהם", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-12*HOUR, stationEnteredAt:NOW-12*HOUR},
-  {id:"GND-1046", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 07", client:"איתי פרידמן", checkCur:5, status:"returned", viewed:true, docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY,
+  {id:"GND-1046", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 07", client:"איתי פרידמן", checkCur:4, status:"returned", viewed:true, docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY,
     history:[], returnInfo:{roleLabel:"מחלקת דיירים", target:"משפטית", note:"אי-התאמה בין ההסכם לנספח — נמכר מחסן אך בהסכם נרשם שלא נמכר", date:"15.08.2026"}},
-  {id:"GND-1047", proj:"גליל ים", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
-  {id:"GND-1048", proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", client:"עומר בן-דוד", checkCur:5, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-1*DAY-6*HOUR},
+  {id:"GND-1047", proj:"גליל ים", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
+  {id:"GND-1048", proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", client:"עומר בן-דוד", checkCur:4, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-1*DAY-6*HOUR},
   {id:"GND-1049", proj:"גליל ים", unit:"בניין A · דירה 03", client:"הילה מזרחי", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*HOUR, stationEnteredAt:NOW-3*HOUR},
   {id:"GND-1050", proj:"גינדי הוד השרון", unit:"בניין C · דירה 11", client:"אלון גבאי", checkCur:1, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-1*DAY, stationEnteredAt:NOW-8*HOUR},
-  {id:"GND-1051", proj:"גינדי קריית אונו", unit:"בניין A · דירה 05", client:"שירה כץ", checkCur:2, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1052", proj:"גליל ים", unit:"בניין B · דירה 22", client:"יאיר שלום", checkCur:4, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-2*DAY},
-  {id:"GND-1053", proj:"פארק גינדי ראשון לציון", unit:"בניין B · דירה 14", client:"מאיה אביטן", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-2*DAY-4*HOUR},
-  {id:"GND-1054", proj:"גינדי הוד השרון", unit:"בניין A · דירה 17", client:"תום לוגסי", checkCur:9, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-10*DAY, stationEnteredAt:NOW-5*HOUR},
-  {id:"GND-1055", proj:"גליל ים", unit:"בניין A · דירה 04", client:"רותם אזולאי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-8*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1056", proj:"גליל ים", unit:"בניין B · דירה 12", client:"נדב פרץ", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-1*DAY-3*HOUR},
-  {id:"GND-1057", proj:"גינדי הוד השרון", unit:"בניין C · דירה 02", client:"קרן שגיא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-16*HOUR},
-  {id:"GND-1058", proj:"גינדי קריית אונו", unit:"בניין A · דירה 18", client:"איתמר כהן", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY-2*HOUR},
-  {id:"GND-1059", proj:"גינדי קריית אונו", unit:"בניין B · דירה 06", client:"מור אשכנזי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-20*HOUR},
-  {id:"GND-1060", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 10", client:"ליאור בר", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-11*DAY, stationEnteredAt:NOW-2*DAY},
-  {id:"GND-1061", proj:"פארק גינדי ראשון לציון", unit:"בניין C · דירה 08", client:"עדי טל", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-10*HOUR},
-  {id:"GND-1062", proj:"גליל ים", unit:"בניין C · דירה 30", client:"אורי נחום", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-1*DAY-8*HOUR},
-  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR}
+  {id:"GND-1051", proj:"גינדי קריית אונו", unit:"בניין A · דירה 05", client:"שירה כץ", checkCur:1, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY},
+  {id:"GND-1052", proj:"גליל ים", unit:"בניין B · דירה 22", client:"יאיר שלום", checkCur:3, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-2*DAY},
+  {id:"GND-1053", proj:"פארק גינדי ראשון לציון", unit:"בניין B · דירה 14", client:"מאיה אביטן", checkCur:6, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-2*DAY-4*HOUR},
+  {id:"GND-1054", proj:"גינדי הוד השרון", unit:"בניין A · דירה 17", client:"תום לוגסי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-10*DAY, stationEnteredAt:NOW-5*HOUR},
+  {id:"GND-1055", proj:"גליל ים", unit:"בניין A · דירה 04", client:"רותם אזולאי", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-8*DAY, stationEnteredAt:NOW-1*DAY},
+  {id:"GND-1056", proj:"גליל ים", unit:"בניין B · דירה 12", client:"נדב פרץ", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-1*DAY-3*HOUR},
+  {id:"GND-1057", proj:"גינדי הוד השרון", unit:"בניין C · דירה 02", client:"קרן שגיא", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-16*HOUR},
+  {id:"GND-1058", proj:"גינדי קריית אונו", unit:"בניין A · דירה 18", client:"איתמר כהן", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY-2*HOUR},
+  {id:"GND-1059", proj:"גינדי קריית אונו", unit:"בניין B · דירה 06", client:"מור אשכנזי", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-20*HOUR},
+  {id:"GND-1060", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 10", client:"ליאור בר", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-11*DAY, stationEnteredAt:NOW-2*DAY},
+  {id:"GND-1061", proj:"פארק גינדי ראשון לציון", unit:"בניין C · דירה 08", client:"עדי טל", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-10*HOUR},
+  {id:"GND-1062", proj:"גליל ים", unit:"בניין C · דירה 30", client:"אורי נחום", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-1*DAY-8*HOUR},
+  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR}
 ];
 
 var allUnits = [
@@ -500,14 +536,39 @@ var allUnits = [
   {proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 08", sold:false, path:testDocPath}
 ];
 
+// "מחירון חברה" — official list price per apartment, set by CEO/Yossi, compared
+// against the price entered live by the accounting stations' checklist.
+var priceList = [
+  {proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", price:1850000},
+  {proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", price:2100000},
+  {proj:"גליל ים", unit:"בניין A · דירה 12", price:1990000},
+  {proj:"גליל ים", unit:"בניין B · דירה 19", price:2050000}
+];
+
 var currentUser = null;
 var expanded = {};
 var segFilter = "all";
 var viewMode = "mine";
 var caseCounter = 1063;
 
+function isOnVacation(u){
+  if(!u || !u.vacation || !u.vacation.active) return false;
+  var now = new Date();
+  var from = new Date(u.vacation.from);
+  var to = new Date(u.vacation.to);
+  to.setHours(23,59,59,999);
+  return now >= from && now <= to;
+}
+function getActiveVacationCeo(){
+  return users.filter(function(u){ return u.ceo && isOnVacation(u); })[0] || null;
+}
+var CEO_STATION_INDEX = 7;
+function isProxyEligible(r){
+  return !!(currentUser && currentUser.username === "יוסי" && r.checkCur === CEO_STATION_INDEX && r.status === "open" && getActiveVacationCeo());
+}
 function canAct(r){
-  return currentUser && currentUser.stations.indexOf(r.checkCur) !== -1 && r.status === "open";
+  if(currentUser && currentUser.stations.indexOf(r.checkCur) !== -1 && r.status === "open") return true;
+  return isProxyEligible(r);
 }
 
 /* ---------- LOGIN ---------- */
@@ -565,6 +626,17 @@ function setupViewToggle(){
     toggle.insertBefore(extraBtn, document.querySelector("#viewToggle button[data-mode='units']"));
     bindViewToggleButton(extraBtn);
   }
+
+  var existingPrice = document.getElementById("viewBtnPriceList");
+  if(existingPrice) existingPrice.remove();
+  if(currentUser.ceo || currentUser.username === "יוסי"){
+    var priceBtn = document.createElement("button");
+    priceBtn.id = "viewBtnPriceList";
+    priceBtn.textContent = "מחירון חברה";
+    priceBtn.setAttribute("data-mode", "pricelist");
+    toggle.appendChild(priceBtn);
+    bindViewToggleButton(priceBtn);
+  }
 }
 
 document.querySelectorAll("#viewToggle button").forEach(bindViewToggleButton);
@@ -577,6 +649,9 @@ function applyView(){
   } else if(viewMode === "units"){
     document.getElementById("all-view").classList.add("active");
     renderTab3();
+  } else if(viewMode === "pricelist"){
+    document.getElementById("pricelist-view").classList.add("active");
+    renderPriceList();
   } else {
     document.getElementById("cycle-view").classList.add("active");
     var mine = viewMode === "mine";
@@ -666,7 +741,23 @@ document.getElementById("bellPanel").addEventListener("click", function(e){ e.st
 /* ---------- MODAL ---------- */
 function closeModal(){ document.getElementById("modalOverlay").classList.remove("active"); }
 
-function openApproveModal(r, stageIndex){
+function openAccountStatusModal(r){
+  var html =
+    '<h3>מצב חשבון — '+r.id+'</h3>'+
+    '<p>'+r.proj+' · '+r.unit+' · לקוח: '+r.client+'</p>'+
+    '<div style="border:1px solid var(--line-strong); border-radius:6px; overflow:hidden; height:360px; margin-bottom:14px;">'+
+      '<iframe src="'+r.accountStatusUrl+'" style="width:100%; height:100%; border:none;"></iframe>'+
+    '</div>'+
+    '<p style="font-size:11.5px; color:var(--ink-faint); margin-top:-8px;">אם התצוגה לא נטענת (תלוי בהרשאות השיתוף של הקובץ), אפשר לפתוח ישירות:<br>'+
+      '<a href="'+r.accountStatusUrl+'" target="_blank" style="color:var(--ink);">פתיחת הקובץ בלשונית חדשה ↗</a></p>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;">סגור</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+}
+
+function openApproveModal(r, stageIndex, opts){
+  opts = opts || {};
   var s = checkStages[stageIndex];
   var extraHtml = "";
   s.extra.forEach(function(f,i){
@@ -685,6 +776,12 @@ function openApproveModal(r, stageIndex){
           '<input type="text" class="cl-input mClText" data-i="'+i+'" placeholder="—">'+
           '<label class="toggle" title="'+item.toggleLabel+'"><input type="checkbox" class="mClToggle" data-i="'+i+'"><span class="toggle-track"></span></label>'+
           '<span class="cl-toggle-label">'+item.toggleLabel+'</span></div>';
+      } else if(item.type === "number"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<input type="number" class="cl-input mClText" data-i="'+i+'" placeholder="—" inputmode="decimal"></div>';
+      } else if(item.type === "link"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<input type="url" class="cl-input mClText" data-i="'+i+'" placeholder="https://drive.google.com/…" style="width:190px;"></div>';
       } else {
         checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
           '<input type="text" class="cl-input mClText" data-i="'+i+'" placeholder="—"></div>';
@@ -692,9 +789,12 @@ function openApproveModal(r, stageIndex){
     });
     checklistHtml += '</div></div>';
   }
+  var titleText = opts.proxy ? "אישור ממלא מקום מנכ״ל" : "אישור תחנה";
+  var proxyNote = opts.proxy ? '<p style="color:var(--ink-soft); font-size:12px; margin-top:-10px;">המנכ״ל בנוהל חול — האישור יתועד כאישור ממלא מקום.</p>' : "";
   var html =
-    '<h3>אישור תחנה</h3>'+
+    '<h3>'+titleText+'</h3>'+
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
+    proxyNote+
     extraHtml+
     checklistHtml+
     '<div class="modal-field"><label>מלל כללי / הערות</label><textarea id="mRemarks" rows="3" placeholder="אופציונלי — כאן ניתן לרשום פרטים חופשיים נוספים"></textarea></div>'+
@@ -731,20 +831,27 @@ function openApproveModal(r, stageIndex){
     var checklistSummary = "";
     if(checklist){
       checklistSummary = checklist.map(function(item,i){
+        var val;
         if(item.type === "toggle"){
-          return item.label+": בוצע";
+          val = "בוצע";
+        } else if(item.type === "text+toggle"){
+          val = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
+        } else {
+          val = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
         }
-        if(item.type === "text+toggle"){
-          var txt = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
-          return item.label+": "+txt+" ("+item.toggleLabel+" ✓)";
-        }
-        var input = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
-        return item.label+": "+input;
+        if(item.field){ r[item.field] = (item.type === "number") ? Number(val) : val; }
+        if(item.type === "text+toggle"){ return item.label+": "+val+" ("+item.toggleLabel+" ✓)"; }
+        return item.label+": "+val;
       }).join(" · ");
     }
     var remarks = document.getElementById("mRemarks").value.trim();
+    if(opts.proxy){
+      var proxyPhrase = 'אושר ע"י יוסי כסמנכ"ל כספים עקב היות המנכ"ל בחול' + (opts.vacationRange ? " ("+opts.vacationRange+")" : "");
+      remarks = [proxyPhrase, remarks].filter(Boolean).join(" — ");
+      r.proxyApprovedBy = currentUser.display;
+    }
     var note = [extras, checklistSummary, remarks].filter(Boolean).join(" — ") || "ללא הערות";
-    r.history.push({stageIndex:stageIndex, role:s.role, task:s.task, date:new Date().toLocaleDateString("he-IL"), note:note});
+    r.history.push({stageIndex:stageIndex, role:s.role, task:s.task, date:new Date().toLocaleDateString("he-IL"), note:note, proxy: !!opts.proxy});
     r.checkCur = Math.min(r.checkCur + 1, checkStages.length);
     r.stationEnteredAt = Date.now();
     flashApproved[r.id] = true;
@@ -783,9 +890,10 @@ function openRejectModal(r, stageIndex){
 
 /* ---------- CEO VIEW ---------- */
 function renderCeo(){
-  var pending = reviewData.filter(function(r){ return r.checkCur === 8 && r.status === "open"; });
+  var pending = reviewData.filter(function(r){ return r.checkCur === 7 && r.status === "open"; });
   var wrap = document.getElementById("ceoCards");
   wrap.innerHTML = "";
+  renderVacationControls();
   if(pending.length === 0){
     wrap.innerHTML = '<div class="ceo-empty">אין כרגע תיקים הממתינים לחתימתך</div>';
     return;
@@ -794,21 +902,36 @@ function renderCeo(){
     var row = document.createElement("div");
     row.className = "ceo-row";
     var fileHref = toLocalExplorerUrl(r.docPath);
+    var accBtn = r.accountStatusUrl
+      ? '<a href="#" class="doc-icon-only accStatusLink" data-id="'+r.id+'" title="צפייה במצב חשבון">'+
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h3"/></svg>'+
+        '</a>'
+      : '<span class="doc-icon-only" style="opacity:.35; cursor:default;" title="טרם הועלה מצב חשבון">'+
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h3"/></svg>'+
+        '</span>';
     row.innerHTML =
       '<div class="ceo-row-text">'+
         '<div class="ceo-row-id">'+r.id+'</div>'+
         '<div class="ceo-row-title">'+r.proj+' · '+r.unit+'</div>'+
-        '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 8 התחנות הקודמות אושרו</div>'+
+        '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 7 התחנות הקודמות אושרו</div>'+
       '</div>'+
       '<div class="ceo-row-actions">'+
+        accBtn+
         '<a href="'+fileHref+'" target="_blank" class="docViewLink doc-icon-only" data-id="'+r.id+'" title="פתיחת נתיב: '+r.docPath+'">'+
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
         '</a><span class="copy-flash" data-flash-id="'+r.id+'"></span>'+
         '<button class="ceo-btn">אשר חתימה סופית</button>'+
         '<button class="reject-btn ceo-return-btn">החזר חוזה לסבב</button>'+
       '</div>';
-    row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 8); });
-    row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, 8); });
+    row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 7); });
+    row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, 7); });
+    var accLink = row.querySelector(".accStatusLink");
+    if(accLink){
+      accLink.addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        openAccountStatusModal(r);
+      });
+    }
     var viewLink = row.querySelector(".docViewLink");
     viewLink.addEventListener("click", function(e){
       e.stopPropagation();
@@ -827,6 +950,45 @@ function renderCeo(){
     wrap.appendChild(row);
   });
 }
+
+function renderVacationControls(){
+  var host = document.getElementById("ceoVacation");
+  if(!host) return;
+  if(isOnVacation(currentUser)){
+    host.innerHTML =
+      '<div class="vacation-controls">'+
+        '<span>בנוהל חול עד '+currentUser.vacation.to+' — יוסי מאשר במקומך</span>'+
+        '<button class="vacation-end-btn" id="vacEndBtn">סיים נוהל חול / חזרתי</button>'+
+      '</div>';
+    document.getElementById("vacEndBtn").addEventListener("click", function(){
+      currentUser.vacation.active = false;
+      applyView();
+    });
+  } else {
+    host.innerHTML = '<div class="vacation-controls"><button class="vacation-btn" id="vacStartBtn">הפעלת נוהל חול</button></div>';
+    document.getElementById("vacStartBtn").addEventListener("click", openVacationModal);
+  }
+}
+
+function openVacationModal(){
+  var html =
+    '<h3>הפעלת נוהל חול</h3>'+
+    '<p>בטווח התאריכים הזה, הסכמים שממתינים לחתימתך יוצגו גם ליוסי סמנכ"ל הכספים לאישור כממלא מקום.</p>'+
+    '<div class="modal-field"><label>מתאריך</label><input type="date" id="vacFrom"></div>'+
+    '<div class="modal-field"><label>עד תאריך</label><input type="date" id="vacTo"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm">הפעלה</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+  document.getElementById("mConfirm").addEventListener("click", function(){
+    var from = document.getElementById("vacFrom").value;
+    var to = document.getElementById("vacTo").value;
+    if(!from || !to){ return; }
+    currentUser.vacation = {active:true, from:from, to:to};
+    closeModal();
+    applyView();
+  });
+}
 document.getElementById("ceoViewAll").addEventListener("click", function(){
   document.querySelectorAll("#viewToggle button").forEach(function(b){ b.classList.remove("active"); });
   document.querySelector("#viewToggle button[data-mode='all']").classList.add("active");
@@ -837,9 +999,11 @@ document.getElementById("ceoViewAll").addEventListener("click", function(){
 /* ---------- CYCLE TABLE ---------- */
 var sel2 = document.getElementById("filterProj2");
 var sel3 = document.getElementById("filterProj3");
+var selPL = document.getElementById("filterProjPL");
 projects.forEach(function(p){
   var o2 = document.createElement("option"); o2.value = p; o2.textContent = p; sel2.appendChild(o2);
   var o3 = document.createElement("option"); o3.value = p; o3.textContent = p; sel3.appendChild(o3);
+  var oPL = document.createElement("option"); oPL.value = p; oPL.textContent = p; selPL.appendChild(oPL);
 });
 
 var flashApproved = {};
@@ -875,6 +1039,15 @@ function detailPanel(r){
 }
 
 function renderTab2(){
+  var banner = document.getElementById("yossiVacationBanner");
+  if(banner){
+    var vacCeo = getActiveVacationCeo();
+    if(currentUser.username === "יוסי" && vacCeo){
+      banner.innerHTML = '<div class="vacation-banner"><span class="dot bad" style="margin-top:5px;"></span><div>שלום יוסי, '+vacCeo.display+' נמצא בחול בין '+vacCeo.vacation.from+' ל-'+vacCeo.vacation.to+'. הינך נדרש לאשר הסכמים להפצה בתחנת המנכ"ל.</div></div>';
+    } else {
+      banner.innerHTML = "";
+    }
+  }
   var q = document.getElementById("search2").value.trim();
   var pf = sel2.value;
   var tbody = document.getElementById("tbody2");
@@ -884,7 +1057,7 @@ function renderTab2(){
     var matchP = !pf || r.proj === pf;
     var matchSeg = segFilter === "all" || segFilter === r.status;
     var mineStations = currentUser.mineStations || currentUser.stations;
-    var matchMine = viewMode !== "mine" || (mineStations.indexOf(r.checkCur) !== -1 && r.status === "open");
+    var matchMine = viewMode !== "mine" || (mineStations.indexOf(r.checkCur) !== -1 && r.status === "open") || isProxyEligible(r);
     var matchResp = viewMode !== "responsibility" || (currentUser.responsibilityStations && currentUser.responsibilityStations.indexOf(r.checkCur) !== -1 && r.status === "open");
     return matchQ && matchP && matchSeg && matchMine && matchResp;
   });
@@ -897,11 +1070,14 @@ function renderTab2(){
     var fileHref = toLocalExplorerUrl(r.docPath);
 
     var actionCell;
+    var proxyRow = isProxyEligible(r) && (currentUser.stations.indexOf(r.checkCur) === -1);
     if(flashApproved[r.id]){
       actionCell = '<span style="color:var(--ok); font-size:12.5px;">תחנה זו אושרה</span>';
       delete flashApproved[r.id];
     } else if(r.status !== "open"){
       actionCell = '<span style="color:var(--ink-faint); font-size:12px;">—</span>';
+    } else if(proxyRow){
+      actionCell = '<button class="approve-btn" data-id="'+r.id+'" data-stage="'+r.checkCur+'" data-rowaction="approve-proxy">אישור מ"מ מנכ"ל</button>';
     } else if(canAct(r)){
       actionCell = '<button class="approve-btn" data-id="'+r.id+'" data-stage="'+r.checkCur+'" data-rowaction="approve">אשר תחנה</button>';
     } else {
@@ -909,14 +1085,26 @@ function renderTab2(){
       actionCell = '<span style="color:var(--ink-faint); font-size:12px;">ממתין ל'+curRole+'</span>';
     }
 
+    var showAccountBtn = currentUser.ceo || currentUser.username === "יוסי" || currentUser.username === "שרון";
+    var accountCell = "";
+    if(showAccountBtn){
+      accountCell = r.accountStatusUrl
+        ? '<a href="#" class="doc-icon-only accStatusLink" data-id="'+r.id+'" title="צפייה במצב חשבון" style="margin-right:6px;">'+
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h3"/></svg>'+
+          '</a>'
+        : '<span class="doc-icon-only" style="margin-right:6px; opacity:.35; cursor:default;" title="טרם הועלה מצב חשבון">'+
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h3"/></svg>'+
+          '</span>';
+    }
+
     var tr = document.createElement("tr");
-    tr.className = "rowclick";
+    tr.className = "rowclick" + (proxyRow ? " proxy-row" : "");
     tr.innerHTML =
       '<td class="chevron">'+(isOpen?"&#9660;":"&#9664;")+'</td>'+
       '<td style="font-family:monospace; font-size:12px; color:var(--ink-soft);">'+r.id+'</td>'+
       '<td>'+r.proj+'</td>'+
       '<td>'+r.unit+'<div class="unit-sub">'+r.client+'</div></td>'+
-      '<td class="docs"><a href="'+fileHref+'" target="_blank" class="docViewLink doc-icon-only" data-id="'+r.id+'" title="פתיחת נתיב: '+r.docPath+'">'+
+      '<td class="docs">'+accountCell+'<a href="'+fileHref+'" target="_blank" class="docViewLink doc-icon-only" data-id="'+r.id+'" title="פתיחת נתיב: '+r.docPath+'">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
         '</a><span class="copy-flash" data-flash-id="'+r.id+'"></span></td>'+
       '<td style="font-weight:500;">'+pct+'%</td>'+
@@ -935,6 +1123,22 @@ function renderTab2(){
       rowActionBtn.addEventListener("click", function(e){
         e.stopPropagation();
         openApproveModal(r, parseInt(rowActionBtn.getAttribute("data-stage"),10));
+      });
+    }
+    var rowProxyBtn = tr.querySelector("[data-rowaction='approve-proxy']");
+    if(rowProxyBtn){
+      rowProxyBtn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var ceoOnVac = getActiveVacationCeo();
+        var range = ceoOnVac ? (ceoOnVac.vacation.from+" עד "+ceoOnVac.vacation.to) : "";
+        openApproveModal(r, parseInt(rowProxyBtn.getAttribute("data-stage"),10), {proxy:true, vacationRange:range});
+      });
+    }
+    var accLink = tr.querySelector(".accStatusLink");
+    if(accLink){
+      accLink.addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        openAccountStatusModal(r);
       });
     }
 
@@ -1035,6 +1239,77 @@ function renderTab3(){
     }
   });
 }
+
+/* ---------- PRICE LIST (מחירון חברה) ---------- */
+function getPriceStatus(plRow){
+  var match = reviewData.filter(function(r){
+    return r.proj === plRow.proj && r.unit === plRow.unit && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
+  })[0];
+  if(!match) return {state:"pending"};
+  var ok = Number(match.listPriceEntered) === Number(plRow.price);
+  if(!ok && match.checkCur > CEO_STATION_INDEX){
+    return {state:"override", caseId:match.id, entered:match.listPriceEntered};
+  }
+  return {state: ok ? "ok" : "mismatch", caseId:match.id, entered:match.listPriceEntered};
+}
+
+function renderPriceListAddForm(){
+  var host = document.getElementById("plAddForm");
+  var projOptions = projects.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join("");
+  host.innerHTML =
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">פרויקט</label>'+
+    '<select id="plNewProj" style="height:36px;">'+projOptions+'</select></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">דירה</label>'+
+    '<input type="text" id="plNewUnit" placeholder="בניין A · דירה 12" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מחיר מחירון</label>'+
+    '<input type="number" id="plNewPrice" placeholder="1850000" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px; width:130px;"></div>'+
+    '<button class="start-btn" id="plAddBtn">הוספה למחירון</button>';
+  document.getElementById("plAddBtn").addEventListener("click", function(){
+    var proj = document.getElementById("plNewProj").value;
+    var unit = document.getElementById("plNewUnit").value.trim();
+    var price = document.getElementById("plNewPrice").value;
+    if(!unit || !price) return;
+    priceList.push({proj:proj, unit:unit, price:Number(price)});
+    renderPriceList();
+  });
+}
+
+function renderPriceList(){
+  renderPriceListAddForm();
+  var q = document.getElementById("searchPL").value.trim();
+  var pf = selPL.value;
+  var tbody = document.getElementById("tbodyPL");
+  tbody.innerHTML = "";
+  priceList.filter(function(p){
+    var matchQ = !q || (p.proj+p.unit).indexOf(q) !== -1;
+    var matchP = !pf || p.proj === pf;
+    return matchQ && matchP;
+  }).forEach(function(p, idx){
+    var st = getPriceStatus(p);
+    var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
+    var label = st.state === "ok" ? "תקין" : st.state === "mismatch" ? "לא תקין" : st.state === "override" ? "אושר למרות אי-התאמה" : "טרם דווח";
+    var sub = st.caseId ? ' <span style="color:var(--ink-faint); font-size:11px;">('+st.caseId+" · דווח: "+Number(st.entered).toLocaleString()+')</span>' : "";
+    var tr = document.createElement("tr");
+    var delCell = currentUser.ceo ? '<button class="reject-btn" data-idx="'+idx+'" style="height:28px; padding:0 10px;">מחיקה</button>' : "";
+    tr.innerHTML =
+      '<td>'+p.proj+'</td>'+
+      '<td style="color:var(--ink-soft);">'+p.unit+'</td>'+
+      '<td>'+Number(p.price).toLocaleString()+'</td>'+
+      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>'+
+      '<td style="text-align:left;">'+delCell+'</td>';
+    tbody.appendChild(tr);
+    var delBtn = tr.querySelector("[data-idx]");
+    if(delBtn){
+      delBtn.addEventListener("click", function(){
+        priceList.splice(idx,1);
+        renderPriceList();
+      });
+    }
+  });
+}
+
+document.getElementById("searchPL").addEventListener("input", renderPriceList);
+selPL.addEventListener("change", renderPriceList);
 
 document.getElementById("excelInput").addEventListener("change", function(e){
   var file = e.target.files[0];
