@@ -846,10 +846,12 @@ function openApproveModal(r, stageIndex, opts){
   }
   var titleText = opts.proxy ? "אישור ממלא מקום מנכ״ל" : "אישור תחנה";
   var proxyNote = opts.proxy ? '<p style="color:var(--ink-soft); font-size:12px; margin-top:-10px;">המנכ״ל בנוהל חול — האישור יתועד כאישור ממלא מקום.</p>' : "";
+  var priceNote = getCasePriceStatus(r) ? '<div class="modal-field"><label>מצב מול מחירון החברה</label>'+priceStatusBadgeHtml(r)+'</div>' : "";
   var html =
     '<h3>'+titleText+'</h3>'+
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
     proxyNote+
+    priceNote+
     historySummaryHtml(r)+
     extraHtml+
     checklistHtml+
