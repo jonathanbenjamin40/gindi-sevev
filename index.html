@@ -139,6 +139,7 @@
   .docs a:hover{border-bottom-color:var(--ink);}
   .docs a svg{flex-shrink:0;}
   .doc-icon-only{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border:1px solid var(--line-strong); border-radius:6px; color:var(--ink-soft); border-bottom:1px solid var(--line-strong) !important;}
+  .price-dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-left:2px; margin-right:4px; vertical-align:middle; box-shadow:0 0 0 1px #fff, 0 0 0 1.5px var(--line-strong); cursor:default;}
   .copy-flash{position:absolute; top:-8px; right:0; font-size:10.5px; color:var(--ok); background:var(--bg); border:1px solid var(--ok); border-radius:4px; padding:2px 6px; opacity:0; transform:translateY(4px); transition:opacity .15s, transform .15s; pointer-events:none; white-space:nowrap; z-index:5;}
   .copy-flash.show{opacity:1; transform:translateY(0);}
   .doc-icon-only:hover{border-color:var(--ink); color:var(--ink);}
@@ -994,10 +995,10 @@ function renderCeo(){
         '<div class="ceo-row-id">'+r.id+'</div>'+
         '<div class="ceo-row-title">'+r.proj+' · '+r.unit+'</div>'+
         '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 7 התחנות הקודמות אושרו</div>'+
-        priceStatusBadgeHtml(r)+
       '</div>'+
       '<div class="ceo-row-actions">'+
         accBtn+
+        priceStatusDotHtml(r)+
         '<a href="'+fileHref+'" target="_blank" class="docViewLink doc-icon-only" data-id="'+r.id+'" title="פתיחת נתיב: '+r.docPath+'">'+
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
         '</a><span class="copy-flash" data-flash-id="'+r.id+'"></span>'+
@@ -1210,6 +1211,7 @@ function renderTab2(){
         : '<span class="doc-icon-only" style="margin-right:6px; opacity:.35; cursor:default;" title="טרם הועלה מצב חשבון">'+
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h3"/></svg>'+
           '</span>';
+      accountCell += priceStatusDotHtml(r);
     }
 
     var tr = document.createElement("tr");
@@ -1225,7 +1227,7 @@ function renderTab2(){
       '<td style="font-weight:500;">'+pct+'%</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.stationEnteredAt)+'</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.openedAt)+'</td>'+
-      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+statusDot+'"></span>'+statusLabel+'</span>'+priceStatusBadgeHtml(r)+'</td>'+
+      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+statusDot+'"></span>'+statusLabel+'</span></td>'+
       '<td>'+actionCell+'</td>';
     tr.addEventListener("click", function(){
       expanded[r.id] = !expanded[r.id];
@@ -1389,6 +1391,21 @@ function priceStatusBadgeHtml(r){
     : st.state === "pending" ? "טרם דווח מחיר בסבב"
     : "אין נתון מחירון לדירה זו";
   return '<div class="status" style="margin-top:5px;"><span class="dot '+dot+'"></span>'+label+'</div>';
+}
+function priceStatusDotColorAndLabel(r){
+  var st = getCasePriceStatus(r);
+  var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
+  var label = st.state === "ok" ? "מחירון: תקין — תואם למחירון"
+    : st.state === "mismatch" ? "מחירון: לא תקין — אי-התאמה"
+    : st.state === "override" ? "מחירון: אושר עי מנכ\"ל למרות אי-התאמה"
+    : st.state === "pending" ? "מחירון: טרם דווח מחיר בסבב"
+    : "מחירון: אין נתון לדירה זו";
+  return {dot:dot, label:label};
+}
+function priceStatusDotHtml(r){
+  if(!canSeePricing()) return "";
+  var info = priceStatusDotColorAndLabel(r);
+  return '<span class="price-dot" style="background:var(--'+info.dot+');" title="'+info.label+'"></span>';
 }
 
 function getPriceStatus(plRow){
