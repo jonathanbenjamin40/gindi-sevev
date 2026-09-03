@@ -133,8 +133,6 @@
   .docs a svg{flex-shrink:0;}
   .doc-icon-only{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border:1px solid var(--line-strong); border-radius:6px; color:var(--ink-soft); border-bottom:1px solid var(--line-strong) !important;}
   .doc-icon-only:hover{border-color:var(--ink); color:var(--ink);}
-  .copy-flash{position:absolute; top:-8px; right:0; font-size:10.5px; color:var(--ok); background:var(--bg); border:1px solid var(--ok); border-radius:4px; padding:2px 6px; opacity:0; transform:translateY(4px); transition:opacity .15s, transform .15s; pointer-events:none; white-space:nowrap;}
-  .copy-flash.show{opacity:1; transform:translateY(0);}
 
   .status{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink);}
   .status .dot{width:7px; height:7px; border-radius:50%; display:inline-block; flex-shrink:0;}
@@ -388,7 +386,7 @@
 <div id="modalOverlay"><div class="modal-box" id="modalBox"></div></div>
 
 <script>
-var projects = ["גינדי TLV", "גינדי הוד השרון", "גינדי קריית אונו", "פארק גינדי ראשון לציון"];
+var projects = ["גליל ים", "גינדי הוד השרון", "גינדי קריית אונו", "פארק גינדי ראשון לציון"];
 
 var checkStages = [
   {role:"מזכירות", task:"דיווח למשרד השיכון", extra:[]},
@@ -457,19 +455,19 @@ var NOW = Date.now();
 var DAY = 86400000, HOUR = 3600000;
 
 var reviewData = [
-  {id:"GND-1042", proj:"גינדי TLV", unit:"בניין A · דירה 12", client:"דוד כהן", checkCur:10, status:"closed", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-14*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1043", proj:"גינדי TLV", unit:"בניין A · דירה 14", client:"מיכל לוי", checkCur:3, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY-4*HOUR},
+  {id:"GND-1042", proj:"גליל ים", unit:"בניין A · דירה 12", client:"דוד כהן", checkCur:10, status:"closed", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-14*DAY, stationEnteredAt:NOW-1*DAY},
+  {id:"GND-1043", proj:"גליל ים", unit:"בניין A · דירה 14", client:"מיכל לוי", checkCur:3, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY-4*HOUR},
   {id:"GND-1044", proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", client:"רון ישראלי", checkCur:6, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-3*DAY},
   {id:"GND-1045", proj:"גינדי קריית אונו", unit:"בניין C · דירה 21", client:"נועה אברהם", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-12*HOUR, stationEnteredAt:NOW-12*HOUR},
   {id:"GND-1046", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 07", client:"איתי פרידמן", checkCur:5, status:"returned", viewed:true, docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY,
     history:[], returnInfo:{roleLabel:"מחלקת דיירים", target:"משפטית", note:"אי-התאמה בין ההסכם לנספח — נמכר מחסן אך בהסכם נרשם שלא נמכר", date:"15.08.2026"}},
-  {id:"GND-1047", proj:"גינדי TLV", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
+  {id:"GND-1047", proj:"גליל ים", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
   {id:"GND-1048", proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", client:"עומר בן-דוד", checkCur:5, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-1*DAY-6*HOUR}
 ];
 
 var allUnits = [
-  {proj:"גינדי TLV", unit:"בניין A · דירה 15", sold:false, path:testDocPath},
-  {proj:"גינדי TLV", unit:"בניין B · דירה 20", sold:false, path:testDocPath},
+  {proj:"גליל ים", unit:"בניין A · דירה 15", sold:false, path:testDocPath},
+  {proj:"גליל ים", unit:"בניין B · דירה 20", sold:false, path:testDocPath},
   {proj:"גינדי הוד השרון", unit:"בניין B · דירה 04", sold:false, path:testDocPath},
   {proj:"גינדי קריית אונו", unit:"בניין C · דירה 22", sold:false, path:testDocPath},
   {proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 08", sold:false, path:testDocPath}
@@ -867,7 +865,7 @@ function renderTab2(){
       '<td>'+r.unit+'<div class="unit-sub">'+r.client+'</div></td>'+
       '<td class="docs"><a href="'+fileHref+'" target="_blank" class="docViewLink doc-icon-only" data-id="'+r.id+'" title="פתיחת נתיב: '+r.docPath+'">'+
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>'+
-        '</a><span class="copy-flash" data-flash-id="'+r.id+'"></span></td>'+
+        '</a></td>'+
       '<td style="font-weight:500;">'+pct+'%</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.stationEnteredAt)+'</td>'+
       '<td style="color:var(--ink-soft); font-size:12.5px;">'+formatDuration(NOW - r.openedAt)+'</td>'+
@@ -891,16 +889,6 @@ function renderTab2(){
     viewLink.addEventListener("click", function(e){
       e.stopPropagation();
       r.viewed = true;
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(r.docPath).then(function(){
-          var flash = tr.querySelector(".copy-flash");
-          if(flash){
-            flash.textContent = "הנתיב הועתק";
-            flash.classList.add("show");
-            setTimeout(function(){ flash.classList.remove("show"); }, 1800);
-          }
-        }).catch(function(){});
-      }
     });
 
     var stripTr = document.createElement("tr");
