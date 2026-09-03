@@ -434,10 +434,13 @@ var users = [
   {username:"גונתן", password:"1234", stations:[8], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
 ];
 
-var testDocPath = "Z:\\פרויקטים\\ג'וני\\תיקיה חדשה";
+var testDocPath = "Z:\\ג'ונתן בנימין";
 function toFileUrl(p){
   var clean = p.replace(/\\/g,'/');
-  var parts = clean.split('/').map(function(seg){ return encodeURIComponent(seg); });
+  var parts = clean.split('/').map(function(seg, idx){
+    if(idx === 0 && /^[A-Za-z]:$/.test(seg)) return seg; // keep the drive letter (e.g. "Z:") unencoded
+    return encodeURIComponent(seg);
+  });
   return 'file:///' + parts.join('/');
 }
 function formatDuration(ms){
