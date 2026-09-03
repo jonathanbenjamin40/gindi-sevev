@@ -235,6 +235,14 @@
   .modal-box p strong{color:var(--ink);}
   .modal-field{margin-bottom:14px;}
   .modal-field label{font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;}
+  .history-summary{max-height:150px; overflow-y:auto; border:1px solid var(--line); border-radius:6px; padding:4px 10px; background:#FAFAFA;}
+  .hs-line{display:flex; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:12px;}
+  .hs-line:last-child{border-bottom:none;}
+  .hs-dot{width:6px; height:6px; border-radius:50%; background:var(--ok); margin-top:4px; flex-shrink:0;}
+  .hs-meta{color:var(--ink-soft);}
+  .cl-filename{font-size:11px; color:var(--ink-soft);}
+  .summary-btn{background:transparent; border:1px solid var(--line-strong); color:var(--ink-soft); font-size:11px; height:24px; padding:0 8px; border-radius:var(--radius); cursor:pointer; font-family:'Heebo', sans-serif; margin-top:6px;}
+  .summary-btn:hover{border-color:var(--ink); color:var(--ink);}
   .checklist{display:flex; flex-direction:column; gap:2px; margin-top:2px;}
   .checklist-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
   .checklist-row:last-child{border-bottom:none;}
@@ -452,13 +460,12 @@ var checklists = {
     {type:"text+toggle", label:"מספר מחסנים שנרכשו", toggleLabel:"עודכן במערכות"},
     {type:"text+toggle", label:"מספר חניות שנרכשו", toggleLabel:"עודכן במערכות"},
     {type:"toggle", label:"אישור חוזה נעול במערכות כספים"},
-    {type:"link", label:"קישור למצב חשבון (Google Drive)", field:"accountStatusUrl"}
+    {type:"upload", label:"העלאת מצב חשבון (צילום מסך / קובץ)", field:"accountStatusUrl"}
   ],
   5: [
     {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"text", label:"הפרש ממחיר הסף"},
-    {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"},
-    {type:"link", label:"קישור למצב חשבון (Google Drive)", field:"accountStatusUrl"}
+    {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
   ]
 };
 
@@ -542,7 +549,8 @@ var priceList = [
   {proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", price:1850000},
   {proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", price:2100000},
   {proj:"גליל ים", unit:"בניין A · דירה 12", price:1990000},
-  {proj:"גליל ים", unit:"בניין B · דירה 19", price:2050000}
+  {proj:"גליל ים", unit:"בניין B · דירה 19", price:2050000},
+  {proj:"גליל ים", unit:"בניין A · דירה 14", price:1920000}
 ];
 
 var currentUser = null;
@@ -756,6 +764,45 @@ function openAccountStatusModal(r){
   document.getElementById("mCancel").addEventListener("click", closeModal);
 }
 
+function historySummaryHtml(r){
+  if(!r.history || r.history.length === 0) return "";
+  var html = '<div class="modal-field"><label>מה בוצע עד כה בתיק</label><div class="history-summary">';
+  r.history.forEach(function(h){
+    html += '<div class="hs-line"><span class="hs-dot"></span><div><strong>'+h.role+' · '+h.task+'</strong> — <span class="hs-meta">'+h.date+' · '+h.note+'</span></div></div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function openCaseSummaryModal(r){
+  var completedHtml = historySummaryHtml(r) || '<div class="modal-field"><label>מה בוצע עד כה בתיק</label><p style="font-size:12.5px; color:var(--ink-faint);">טרם בוצעו פעולות בתיק זה.</p></div>';
+
+  var upcomingHtml = '<div class="modal-field"><label>מה עוד נדרש עד סגירת התיק</label><div class="history-summary">';
+  var anyUpcoming = false;
+  checkStages.forEach(function(s, i){
+    if(i < r.checkCur) return; // already done, shown above
+    anyUpcoming = true;
+    var cl = checklists[i];
+    var reqs = [];
+    if(cl){ cl.forEach(function(item){ reqs.push(item.label); }); }
+    if(s.extra && s.extra.length){ s.extra.forEach(function(f){ reqs.push(f+" (רשות)"); }); }
+    reqs.push("הערות (רשות)");
+    upcomingHtml += '<div class="hs-line"><span class="hs-dot" style="background:'+(i===r.checkCur?"var(--warn)":"var(--ink-faint)")+';"></span><div><strong>'+s.role+' · '+s.task+'</strong><br><span class="hs-meta">'+reqs.join(" · ")+'</span></div></div>';
+  });
+  if(!anyUpcoming){ upcomingHtml += '<div class="hs-line" style="border:none;"><span class="hs-meta">התיק הושלם — כל התחנות אושרו.</span></div>'; }
+  upcomingHtml += '</div></div>';
+
+  var html =
+    '<h3>סיכום תיק — '+r.id+'</h3>'+
+    '<p>'+r.proj+' · '+r.unit+' · לקוח: '+r.client+'</p>'+
+    completedHtml+
+    upcomingHtml+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;">סגור</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+}
+
 function openApproveModal(r, stageIndex, opts){
   opts = opts || {};
   var s = checkStages[stageIndex];
@@ -779,6 +826,10 @@ function openApproveModal(r, stageIndex, opts){
       } else if(item.type === "number"){
         checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
           '<input type="number" class="cl-input mClText" data-i="'+i+'" placeholder="—" inputmode="decimal"></div>';
+      } else if(item.type === "upload"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<input type="file" accept="image/*,.pdf" class="mClFile" data-i="'+i+'" style="width:190px; font-size:11.5px;">'+
+          '<span class="cl-filename" data-i="'+i+'"></span></div>';
       } else if(item.type === "link"){
         checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
           '<input type="url" class="cl-input mClText" data-i="'+i+'" placeholder="https://drive.google.com/…" style="width:190px;"></div>';
@@ -795,6 +846,7 @@ function openApproveModal(r, stageIndex, opts){
     '<h3>'+titleText+'</h3>'+
     '<p>הנך עומד לאשר את תיק <strong>'+r.id+'</strong> · '+r.proj+' · '+r.unit+'<br>בתחנה: <strong>'+s.role+' · '+s.task+'</strong>. האם אתה בטוח?</p>'+
     proxyNote+
+    historySummaryHtml(r)+
     extraHtml+
     checklistHtml+
     '<div class="modal-field"><label>מלל כללי / הערות</label><textarea id="mRemarks" rows="3" placeholder="אופציונלי — כאן ניתן לרשום פרטים חופשיים נוספים"></textarea></div>'+
@@ -803,7 +855,19 @@ function openApproveModal(r, stageIndex, opts){
   document.getElementById("modalOverlay").classList.add("active");
   document.getElementById("mCancel").addEventListener("click", closeModal);
   var confirmBtn = document.getElementById("mConfirm");
+  var uploadedFiles = {};
   if(checklist){
+    document.querySelectorAll(".mClFile").forEach(function(el){
+      el.addEventListener("change", function(){
+        var i = el.getAttribute("data-i");
+        if(el.files && el.files[0]){
+          uploadedFiles[i] = {url: URL.createObjectURL(el.files[0]), name: el.files[0].name};
+          var nameEl = document.querySelector('.cl-filename[data-i="'+i+'"]');
+          if(nameEl) nameEl.textContent = el.files[0].name;
+        }
+        checkComplete();
+      });
+    });
     var checkComplete = function(){
       var complete = checklist.every(function(item,i){
         if(item.type === "toggle"){
@@ -814,6 +878,9 @@ function openApproveModal(r, stageIndex, opts){
           var txt = document.querySelector('.mClText[data-i="'+i+'"]');
           var tog = document.querySelector('.mClToggle[data-i="'+i+'"]');
           return txt && txt.value.trim() !== "" && tog && tog.checked;
+        }
+        if(item.type === "upload"){
+          return !!uploadedFiles[i];
         }
         var input = document.querySelector('.mClText[data-i="'+i+'"]');
         return input && input.value.trim() !== "";
@@ -834,12 +901,16 @@ function openApproveModal(r, stageIndex, opts){
         var val;
         if(item.type === "toggle"){
           val = "בוצע";
-        } else if(item.type === "text+toggle"){
-          val = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
+        } else if(item.type === "upload"){
+          val = uploadedFiles[i] ? uploadedFiles[i].name : "";
         } else {
           val = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
         }
-        if(item.field){ r[item.field] = (item.type === "number") ? Number(val) : val; }
+        if(item.field){
+          if(item.type === "number") r[item.field] = Number(val);
+          else if(item.type === "upload") r[item.field] = uploadedFiles[i] ? uploadedFiles[i].url : "";
+          else r[item.field] = val;
+        }
         if(item.type === "text+toggle"){ return item.label+": "+val+" ("+item.toggleLabel+" ✓)"; }
         return item.label+": "+val;
       }).join(" · ");
@@ -891,10 +962,13 @@ function openRejectModal(r, stageIndex){
 /* ---------- CEO VIEW ---------- */
 function renderCeo(){
   var pending = reviewData.filter(function(r){ return r.checkCur === 7 && r.status === "open"; });
+  var proxyDone = reviewData.filter(function(r){
+    return !r.retroReviewedByCeo && r.history.some(function(h){ return h.stageIndex === 7 && h.proxy; });
+  });
   var wrap = document.getElementById("ceoCards");
   wrap.innerHTML = "";
   renderVacationControls();
-  if(pending.length === 0){
+  if(pending.length === 0 && proxyDone.length === 0){
     wrap.innerHTML = '<div class="ceo-empty">אין כרגע תיקים הממתינים לחתימתך</div>';
     return;
   }
@@ -922,9 +996,11 @@ function renderCeo(){
         '</a><span class="copy-flash" data-flash-id="'+r.id+'"></span>'+
         '<button class="ceo-btn">אשר חתימה סופית</button>'+
         '<button class="reject-btn ceo-return-btn">החזר חוזה לסבב</button>'+
+        '<button class="summary-btn" style="margin-top:0;">סיכום תיק</button>'+
       '</div>';
     row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 7); });
     row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, 7); });
+    row.querySelector(".summary-btn").addEventListener("click", function(){ openCaseSummaryModal(r); });
     var accLink = row.querySelector(".accStatusLink");
     if(accLink){
       accLink.addEventListener("click", function(e){
@@ -949,6 +1025,36 @@ function renderCeo(){
     });
     wrap.appendChild(row);
   });
+
+  if(proxyDone.length){
+    var sectionTitle = document.createElement("div");
+    sectionTitle.className = "detail-title";
+    sectionTitle.style.marginTop = "10px";
+    sectionTitle.textContent = "אושרו על ידך על ידי ממלא מקום (בנוהל חול)";
+    wrap.appendChild(sectionTitle);
+    proxyDone.forEach(function(r){
+      var proxyHist = r.history.filter(function(h){ return h.stageIndex === 7 && h.proxy; }).pop();
+      var row = document.createElement("div");
+      row.className = "ceo-row";
+      row.style.background = "#F1F1F1";
+      row.innerHTML =
+        '<div class="ceo-row-text">'+
+          '<div class="ceo-row-id">'+r.id+'</div>'+
+          '<div class="ceo-row-title" style="color:var(--ink-soft);">'+r.proj+' · '+r.unit+'</div>'+
+          '<div class="ceo-row-sub">אושר ע"י יוסי (ממלא מקום מנכ"ל) · '+(proxyHist?proxyHist.date:"")+' — התיק ממשיך בסבב</div>'+
+        '</div>'+
+        '<div class="ceo-row-actions">'+
+          '<button class="summary-btn" style="margin-top:0;">סיכום תיק</button>'+
+          '<button class="vacation-btn" data-ack-id="'+r.id+'">סימון כנצפה</button>'+
+        '</div>';
+      row.querySelector(".summary-btn").addEventListener("click", function(){ openCaseSummaryModal(r); });
+      row.querySelector("[data-ack-id]").addEventListener("click", function(){
+        r.retroReviewedByCeo = true;
+        renderCeo();
+      });
+      wrap.appendChild(row);
+    });
+  }
 }
 
 function renderVacationControls(){
@@ -1084,6 +1190,8 @@ function renderTab2(){
       var curRole = r.checkCur < checkStages.length ? checkStages[r.checkCur].role : "";
       actionCell = '<span style="color:var(--ink-faint); font-size:12px;">ממתין ל'+curRole+'</span>';
     }
+    actionCell = '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:2px;">'+actionCell+
+      '<button class="summary-btn" data-summary-id="'+r.id+'">סיכום תיק</button></div>';
 
     var showAccountBtn = currentUser.ceo || currentUser.username === "יוסי" || currentUser.username === "שרון";
     var accountCell = "";
@@ -1139,6 +1247,13 @@ function renderTab2(){
       accLink.addEventListener("click", function(e){
         e.preventDefault(); e.stopPropagation();
         openAccountStatusModal(r);
+      });
+    }
+    var summaryBtn = tr.querySelector("[data-summary-id]");
+    if(summaryBtn){
+      summaryBtn.addEventListener("click", function(e){
+        e.stopPropagation();
+        openCaseSummaryModal(r);
       });
     }
 
@@ -1263,7 +1378,10 @@ function renderPriceListAddForm(){
     '<input type="text" id="plNewUnit" placeholder="בניין A · דירה 12" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
     '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מחיר מחירון</label>'+
     '<input type="number" id="plNewPrice" placeholder="1850000" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px; width:130px;"></div>'+
-    '<button class="start-btn" id="plAddBtn">הוספה למחירון</button>';
+    '<button class="start-btn" id="plAddBtn">הוספה למחירון</button>'+
+    '<div style="border-right:1px solid var(--line-strong); height:36px; margin:0 4px;"></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">טעינת רשומות מאקסל</label>'+
+    '<input type="file" id="plExcelInput" accept=".xlsx,.xls,.csv" style="font-size:12px;"></div>';
   document.getElementById("plAddBtn").addEventListener("click", function(){
     var proj = document.getElementById("plNewProj").value;
     var unit = document.getElementById("plNewUnit").value.trim();
@@ -1271,6 +1389,34 @@ function renderPriceListAddForm(){
     if(!unit || !price) return;
     priceList.push({proj:proj, unit:unit, price:Number(price)});
     renderPriceList();
+  });
+  document.getElementById("plExcelInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var data = new Uint8Array(evt.target.result);
+        var wb = XLSX.read(data, {type:"array"});
+        var sheet = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet);
+        var added = 0;
+        rows.forEach(function(row){
+          var proj = row["פרויקט"] || row["Project"];
+          var unit = row["דירה"] || row["יחידה"] || row["בניין/דירה"] || row["Unit"];
+          var price = row["מחיר"] || row["מחיר מחירון"] || row["Price"];
+          if(proj && unit && price){
+            priceList.push({proj:String(proj).trim(), unit:String(unit).trim(), price:Number(price)});
+            added++;
+          }
+        });
+        renderPriceList();
+        alert(added + " רשומות נטענו למחירון");
+      } catch(err){
+        alert("שגיאה בקריאת הקובץ — יש לוודא עמודות \"פרויקט\", \"דירה\" ו\"מחיר\"");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -1290,19 +1436,29 @@ function renderPriceList(){
     var label = st.state === "ok" ? "תקין" : st.state === "mismatch" ? "לא תקין" : st.state === "override" ? "אושר למרות אי-התאמה" : "טרם דווח";
     var sub = st.caseId ? ' <span style="color:var(--ink-faint); font-size:11px;">('+st.caseId+" · דווח: "+Number(st.entered).toLocaleString()+')</span>' : "";
     var tr = document.createElement("tr");
+    var priceCell = currentUser.ceo
+      ? '<input type="number" class="pl-price-edit" data-idx="'+idx+'" value="'+p.price+'" style="width:110px; border:none; border-bottom:1px dashed var(--ink-faint); background:transparent; font-family:\'Heebo\', sans-serif; font-size:13.5px; color:var(--ink); padding:2px 0;">'
+      : Number(p.price).toLocaleString();
     var delCell = currentUser.ceo ? '<button class="reject-btn" data-idx="'+idx+'" style="height:28px; padding:0 10px;">מחיקה</button>' : "";
     tr.innerHTML =
       '<td>'+p.proj+'</td>'+
       '<td style="color:var(--ink-soft);">'+p.unit+'</td>'+
-      '<td>'+Number(p.price).toLocaleString()+'</td>'+
+      '<td>'+priceCell+'</td>'+
       '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>'+
       '<td style="text-align:left;">'+delCell+'</td>';
     tbody.appendChild(tr);
-    var delBtn = tr.querySelector("[data-idx]");
+    var delBtn = tr.querySelector("[data-idx].reject-btn");
     if(delBtn){
       delBtn.addEventListener("click", function(){
         priceList.splice(idx,1);
         renderPriceList();
+      });
+    }
+    var priceEdit = tr.querySelector(".pl-price-edit");
+    if(priceEdit){
+      priceEdit.addEventListener("change", function(){
+        var v = Number(priceEdit.value);
+        if(!isNaN(v) && v > 0){ p.price = v; renderPriceList(); }
       });
     }
   });
