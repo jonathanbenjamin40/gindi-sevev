@@ -387,7 +387,7 @@
         <button class="start-btn" id="addProjectBtn">+ פרויקט חדש</button>
       </div>
       <div class="upload-box">
-        <div class="txt">קובץ אקסל/CSV בפורמט המחירון (עמודות: <strong>בניין</strong>, <strong>מס' דירה</strong>, <strong>קומה</strong>, <strong>מס' חדרים</strong>, <strong>טיפוס</strong>, <strong>כיוון</strong>, <strong>שטח מכר</strong>, <strong>מרפסת</strong>, <strong>מחירון</strong>). הקובץ בד"כ לפרויקט אחד — בחר אותו כאן; אם יש בקובץ עמודת "פרויקט" היא תגבר. דירה קיימת (לפי בניין+מספר) תעודכן, דירה חדשה תיווצר.</div>
+        <div class="txt">קובץ אקסל/CSV בפורמט המחירון (עמודות: <strong>בניין</strong>, <strong>מס' דירה</strong>, <strong>קומה</strong>, <strong>מס' חדרים</strong>, <strong>טיפוס</strong>, <strong>כיוון</strong>, <strong>שטח מכר</strong>, <strong>מרפסת</strong>, <strong>מחירון</strong>, ואופציונלית <strong>נתיב</strong> — הנתיב לתיקיית הדירה בכונן Z). הקובץ בד"כ לפרויקט אחד — בחר אותו כאן; אם יש בקובץ עמודת "פרויקט" היא תגבר. דירה קיימת (לפי בניין+מספר) תעודכן, דירה חדשה תיווצר.</div>
         <select id="excelProj" style="height:36px;"></select>
         <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
       </div>
@@ -399,7 +399,7 @@
       <div style="overflow-x:auto;">
         <table style="min-width:920px;">
           <thead>
-            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מרפסת</th><th>מחירון</th><th style="text-align:center;">סטטוס</th><th></th></tr>
+            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מרפסת</th><th>מחירון</th><th>נתיב</th><th style="text-align:center;">סטטוס</th><th></th></tr>
           </thead>
           <tbody id="tbody3"></tbody>
         </table>
@@ -420,7 +420,7 @@
       <div style="overflow-x:auto;">
         <table style="min-width:920px;">
           <thead>
-            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מחירון</th><th style="text-align:center;">מצב</th></tr>
+            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מחירון</th><th style="text-align:center;">מצב</th><th></th></tr>
           </thead>
           <tbody id="tbodyPL"></tbody>
         </table>
@@ -1304,6 +1304,40 @@ function renderTab2(){
 }
 
 /* ---------- ALL UNITS + EXCEL ---------- */
+function openEditUnitModal(u, onSaved){
+  function field(id, label, val, width, type){
+    type = type || "text";
+    return '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">'+label+'</label>'+
+      '<input type="'+type+'" id="'+id+'" value="'+(val===undefined||val===null?"":val)+'" style="height:36px; width:'+width+'px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>';
+  }
+  var html =
+    '<h3>עריכת דירה</h3>'+
+    '<p>'+u.proj+' · בניין '+u.building+' · דירה '+u.aptNumber+'<br><span style="color:var(--ink-faint); font-size:11.5px;">פרויקט, בניין ומספר דירה קבועים (הם מזהי הדירה) — כל שאר השדות ניתנים לעריכה.</span></p>'+
+    '<div style="display:flex; flex-wrap:wrap; gap:14px;">'+
+    field("eFloor","קומה", u.floor, 70)+
+    field("eRooms","מס\' חדרים", u.rooms, 70)+
+    field("eType","טיפוס", u.type, 70)+
+    field("eDirection","כיוון", u.direction, 110)+
+    field("eArea","שטח מכר", u.saleArea, 80)+
+    field("eBalcony","מרפסת", u.balcony, 70)+
+    field("ePrice","מחירון", u.price, 120, "number")+
+    field("ePath","נתיב בכונן Z", u.path, 260)+
+    '</div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm">שמירה</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+  document.getElementById("mConfirm").addEventListener("click", function(){
+    var val = function(id){ var v = document.getElementById(id).value.trim(); return v === "" ? undefined : v; };
+    u.floor = val("eFloor"); u.rooms = val("eRooms"); u.type = val("eType");
+    u.direction = val("eDirection"); u.saleArea = val("eArea"); u.balcony = val("eBalcony");
+    if(val("ePath")) u.path = val("ePath");
+    var p = val("ePrice"); u.price = p ? Number(p) : "";
+    closeModal();
+    if(onSaved) onSaved();
+  });
+}
+
 function openStartCycleModal(u){
   var html =
     '<h3>סימון דירה כנמכרה</h3>'+
@@ -1356,6 +1390,7 @@ function renderUnitAddForm(){
     field("uNewArea","שטח מכר","123",70)+
     field("uNewBalcony","מרפסת","14",60)+
     field("uNewPrice","מחירון","1850000",110,"number")+
+    field("uNewPath","נתיב בכונן Z","Z:\\פרויקטים\\...",220)+
     '<button class="start-btn" id="uAddBtn">הוספת דירה למלאי</button>';
   document.getElementById("uAddBtn").addEventListener("click", function(){
     var proj = document.getElementById("uNewProj").value;
@@ -1367,7 +1402,7 @@ function renderUnitAddForm(){
     if(allUnits.some(function(u){ return u.unitKey === key; })){ alert("דירה זו כבר קיימת במלאי"); return; }
     var val = function(id){ var v = document.getElementById(id).value.trim(); return v === "" ? undefined : v; };
     allUnits.push({
-      proj:proj, building:building, aptNumber:aptNumber, unitKey:key, sold:false, path:testDocPath,
+      proj:proj, building:building, aptNumber:aptNumber, unitKey:key, sold:false, path: val("uNewPath") || testDocPath,
       floor: val("uNewFloor"), rooms: val("uNewRooms"), type: val("uNewType"),
       direction: val("uNewDirection"), saleArea: val("uNewArea"), balcony: val("uNewBalcony"),
       price: val("uNewPrice") ? Number(val("uNewPrice")) : ""
@@ -1391,7 +1426,8 @@ function renderTab3(){
     var actionCell = u.sold
       ? '<span style="font-size:12px; color:var(--ink-faint);">בסבב</span>'
       : '<button class="start-btn">סימון כנמכר – התחלת סבב</button>';
-    var delBtn = (!u.sold) ? '<button class="reject-btn" style="height:26px; padding:0 8px; margin-right:6px;">מחיקה</button>' : "";
+    var editBtn = currentUser.ceo ? '<button class="vacation-btn edit-unit-btn" style="height:26px; padding:0 8px; margin-right:6px;">עריכה</button>' : "";
+    var delBtn = (!u.sold && currentUser.ceo) ? '<button class="reject-btn" style="height:26px; padding:0 8px; margin-right:6px;">מחיקה</button>' : "";
     tr.innerHTML =
       '<td>'+u.proj+'</td>'+
       '<td style="color:var(--ink-soft);">'+u.building+'</td>'+
@@ -1403,10 +1439,17 @@ function renderTab3(){
       '<td>'+(u.saleArea||"—")+'</td>'+
       '<td>'+(u.balcony||"—")+'</td>'+
       '<td>'+(u.price?Number(u.price).toLocaleString():"—")+'</td>'+
+      '<td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:ltr; text-align:right; font-size:11px; color:'+(u.path?"var(--ink-soft)":"var(--bad)")+';" title="'+(u.path||"אין נתיב מוגדר")+'">'+(u.path||"אין נתיב")+'</td>'+
       '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+(u.sold?"ok":"neutral")+'"></span>'+(u.sold?"נמכרה":"למכירה")+'</span></td>'+
-      '<td style="text-align:left; white-space:nowrap;">'+actionCell+delBtn+'</td>';
+      '<td style="text-align:left; white-space:nowrap;">'+actionCell+editBtn+delBtn+'</td>';
     tbody.appendChild(tr);
 
+    var editUnitBtn = tr.querySelector(".edit-unit-btn");
+    if(editUnitBtn){
+      editUnitBtn.addEventListener("click", function(){
+        openEditUnitModal(u, renderTab3);
+      });
+    }
     var startBtn = tr.querySelector(".start-btn");
     if(startBtn){
       startBtn.addEventListener("click", function(){
@@ -1509,8 +1552,15 @@ function renderPriceList(){
       '<td>'+(u.direction||"—")+'</td>'+
       '<td>'+(u.saleArea||"—")+'</td>'+
       '<td>'+priceCell+'</td>'+
-      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>';
+      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>'+
+      (currentUser.ceo ? '<td style="text-align:left;"><button class="vacation-btn edit-unit-btn" style="height:26px; padding:0 8px;">עריכה</button></td>' : '<td></td>');
     tbody.appendChild(tr);
+    var editUnitBtn = tr.querySelector(".edit-unit-btn");
+    if(editUnitBtn){
+      editUnitBtn.addEventListener("click", function(){
+        openEditUnitModal(u, renderPriceList);
+      });
+    }
     var priceEdit = tr.querySelector(".pl-price-edit");
     if(priceEdit){
       priceEdit.addEventListener("change", function(){
@@ -1562,7 +1612,7 @@ function upsertUnitsFromRows(rows, defaultProj){
     var fields = {
       floor: row["קומה"], rooms: row["מס' חדרים"] || row["חדרים"], type: row["טיפוס"],
       direction: row["כיוון"], saleArea: row["שטח מכר"] || row["שטח"], balcony: row["מרפסת"],
-      price: row["מחירון"] || row["מחיר"]
+      price: row["מחירון"] || row["מחיר"], path: row["נתיב"] || row["תיקייה"] || row["Path"]
     };
     var existing = allUnits.filter(function(u){ return u.unitKey === key; })[0];
     if(existing){
