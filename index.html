@@ -384,6 +384,7 @@
           <h2>כלל הדירות בפרויקט</h2>
           <p>מלאי הדירות האמיתי — מקור האמת היחיד, גם ל"כלל הדירות" וגם ל"מחירון חברה". סימון דירה כנמכרה מתחיל עבורה את הסבב</p>
         </div>
+        <button class="start-btn" id="addProjectBtn">+ פרויקט חדש</button>
       </div>
       <div class="upload-box">
         <div class="txt">קובץ אקסל/CSV בפורמט המחירון (עמודות: <strong>בניין</strong>, <strong>מס' דירה</strong>, <strong>קומה</strong>, <strong>מס' חדרים</strong>, <strong>טיפוס</strong>, <strong>כיוון</strong>, <strong>שטח מכר</strong>, <strong>מרפסת</strong>, <strong>מחירון</strong>). הקובץ בד"כ לפרויקט אחד — בחר אותו כאן; אם יש בקובץ עמודת "פרויקט" היא תגבר. דירה קיימת (לפי בניין+מספר) תעודכן, דירה חדשה תיווצר.</div>
@@ -440,7 +441,7 @@
 <div id="modalOverlay"><div class="modal-box" id="modalBox"></div></div>
 
 <script>
-var projects = ["גליל ים", "גינדי הוד השרון", "גינדי קריית אונו", "פארק גינדי ראשון לציון"];
+var projects = [];
 
 var checkStages = [
   {role:"רכזת חוזים", task:"דיווח למשרד השיכון", extra:[]},
@@ -1303,28 +1304,74 @@ function renderTab2(){
 }
 
 /* ---------- ALL UNITS + EXCEL ---------- */
+function openStartCycleModal(u){
+  var html =
+    '<h3>סימון דירה כנמכרה</h3>'+
+    '<p>'+u.proj+' · בניין '+u.building+' · דירה '+u.aptNumber+'<br>פרטי הרוכש/ים יוזנו כעת ויפתחו את סבב הבדיקות עבור הדירה.</p>'+
+    '<div class="modal-field"><label>שם הלקוח/ה (חובה)</label><input type="text" id="mClientName" placeholder="שם מלא"></div>'+
+    '<div class="modal-field"><label>טלפון</label><input type="text" id="mClientPhone" placeholder="אופציונלי"></div>'+
+    '<div class="modal-field"><label>תעודת זהות</label><input type="text" id="mClientId" placeholder="אופציונלי"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm" disabled>פתיחת תיק</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+  var confirmBtn = document.getElementById("mConfirm");
+  var nameInput = document.getElementById("mClientName");
+  nameInput.addEventListener("input", function(){ confirmBtn.disabled = nameInput.value.trim() === ""; });
+  confirmBtn.addEventListener("click", function(){
+    var name = nameInput.value.trim();
+    if(!name) return;
+    var phone = document.getElementById("mClientPhone").value.trim();
+    var idNum = document.getElementById("mClientId").value.trim();
+    u.sold = true;
+    caseCounter++;
+    reviewData.push({
+      id:"GND-"+caseCounter, proj:u.proj, unit:unitLabel(u.building,u.aptNumber), unitKey:u.unitKey,
+      client:name, clientPhone:phone, clientId:idNum,
+      checkCur:0, status:"open", viewed:false, returnInfo:null, history:[],
+      docPath: u.path || testDocPath, openedAt:Date.now(), stationEnteredAt:Date.now()
+    });
+    closeModal();
+    renderTab3();
+  });
+}
+
 function renderUnitAddForm(){
   var host = document.getElementById("unitAddForm");
   var projOptions = projects.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join("");
+  function field(id, label, placeholder, width, type){
+    type = type || "text";
+    return '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">'+label+'</label>'+
+      '<input type="'+type+'" id="'+id+'" placeholder="'+placeholder+'" style="height:36px; width:'+width+'px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>';
+  }
   host.innerHTML =
     '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">פרויקט</label>'+
     '<select id="uNewProj" style="height:36px;">'+projOptions+'</select></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">בניין</label>'+
-    '<input type="text" id="uNewBuilding" placeholder="A" style="height:36px; width:70px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מס\' דירה</label>'+
-    '<input type="text" id="uNewApt" placeholder="12" style="height:36px; width:70px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מחירון</label>'+
-    '<input type="number" id="uNewPrice" placeholder="1850000" style="height:36px; width:120px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
+    field("uNewBuilding","בניין","A",60)+
+    field("uNewApt","מס' דירה","12",60)+
+    field("uNewFloor","קומה","3",55)+
+    field("uNewRooms","מס' חדרים","5",55)+
+    field("uNewType","טיפוס","A*",55)+
+    field("uNewDirection","כיוון","דרום מערב",100)+
+    field("uNewArea","שטח מכר","123",70)+
+    field("uNewBalcony","מרפסת","14",60)+
+    field("uNewPrice","מחירון","1850000",110,"number")+
     '<button class="start-btn" id="uAddBtn">הוספת דירה למלאי</button>';
   document.getElementById("uAddBtn").addEventListener("click", function(){
     var proj = document.getElementById("uNewProj").value;
     var building = document.getElementById("uNewBuilding").value.trim();
     var aptNumber = document.getElementById("uNewApt").value.trim();
-    var price = document.getElementById("uNewPrice").value;
+    if(!proj){ alert("יש להוסיף פרויקט קודם"); return; }
     if(!building || !aptNumber) return;
     var key = makeUnitKey(proj, building, aptNumber);
     if(allUnits.some(function(u){ return u.unitKey === key; })){ alert("דירה זו כבר קיימת במלאי"); return; }
-    allUnits.push({proj:proj, building:building, aptNumber:aptNumber, unitKey:key, price: price?Number(price):"", sold:false, path:testDocPath});
+    var val = function(id){ var v = document.getElementById(id).value.trim(); return v === "" ? undefined : v; };
+    allUnits.push({
+      proj:proj, building:building, aptNumber:aptNumber, unitKey:key, sold:false, path:testDocPath,
+      floor: val("uNewFloor"), rooms: val("uNewRooms"), type: val("uNewType"),
+      direction: val("uNewDirection"), saleArea: val("uNewArea"), balcony: val("uNewBalcony"),
+      price: val("uNewPrice") ? Number(val("uNewPrice")) : ""
+    });
     renderTab3();
   });
 }
@@ -1363,14 +1410,7 @@ function renderTab3(){
     var startBtn = tr.querySelector(".start-btn");
     if(startBtn){
       startBtn.addEventListener("click", function(){
-        u.sold = true;
-        caseCounter++;
-        reviewData.push({
-          id:"GND-"+caseCounter, proj:u.proj, unit:unitLabel(u.building,u.aptNumber), unitKey:u.unitKey, client:"— טרם עודכן —",
-          checkCur:0, status:"open", viewed:false, returnInfo:null, history:[],
-          docPath: u.path || testDocPath, openedAt:Date.now(), stationEnteredAt:Date.now()
-        });
-        renderTab3();
+        openStartCycleModal(u);
       });
     }
     var delUnitBtn = tr.querySelector(".reject-btn");
@@ -1493,6 +1533,23 @@ function ensureProjectOption(proj){
     });
   }
 }
+
+function openAddProjectModal(){
+  var html =
+    '<h3>הוספת פרויקט חדש</h3>'+
+    '<div class="modal-field"><label>שם הפרויקט</label><input type="text" id="mNewProjName" placeholder="למשל: גליל ים"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm">הוספה</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+  document.getElementById("mConfirm").addEventListener("click", function(){
+    var name = document.getElementById("mNewProjName").value.trim();
+    if(!name) return;
+    ensureProjectOption(name);
+    closeModal();
+    applyView();
+  });
+}
 function upsertUnitsFromRows(rows, defaultProj){
   var added = 0, updated = 0;
   rows.forEach(function(row){
@@ -1546,6 +1603,7 @@ document.getElementById("search2").addEventListener("input", renderTab2);
 sel2.addEventListener("change", renderTab2);
 document.getElementById("search3").addEventListener("input", renderTab3);
 sel3.addEventListener("change", renderTab3);
+document.getElementById("addProjectBtn").addEventListener("click", openAddProjectModal);
 
 document.querySelectorAll(".seg button").forEach(function(btn){
   btn.addEventListener("click", function(){
