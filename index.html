@@ -563,6 +563,44 @@ function canAct(r){
 document.getElementById("loginBtn").addEventListener("click", doLogin);
 document.getElementById("loginPass").addEventListener("keydown", function(e){ if(e.key === "Enter") doLogin(); });
 
+var STATE_API = "/api/state";
+var saveTimer = null;
+var stateLoaded = false;
+function saveState(){
+  if(!stateLoaded) return; // never overwrite the sheet with an empty local state before the first load finished
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    fetch(STATE_API, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({units:allUnits, cases:reviewData, projects:projects})
+    }).catch(function(err){ console.error("שמירת נתונים נכשלה", err); });
+  }, 800);
+}
+function maxCaseCounter(cases){
+  var max = 999;
+  cases.forEach(function(c){
+    var n = parseInt(String(c.id).replace(/[^0-9]/g,""),10);
+    if(!isNaN(n) && n > max) max = n;
+  });
+  return max;
+}
+function loadState(cb){
+  fetch(STATE_API).then(function(res){ return res.json(); }).then(function(data){
+    allUnits = data.units || [];
+    reviewData = data.cases || [];
+    projects = data.projects || [];
+    caseCounter = maxCaseCounter(reviewData);
+    rebuildProjectDropdowns();
+    stateLoaded = true;
+    cb();
+  }).catch(function(err){
+    console.error("טעינת נתונים נכשלה, ממשיך עם מצב ריק", err);
+    stateLoaded = true;
+    cb();
+  });
+}
+
 function doLogin(){
   var u = document.getElementById("loginUser").value.trim();
   var p = document.getElementById("loginPass").value.trim();
@@ -577,7 +615,12 @@ function doLogin(){
   document.getElementById("whoName").textContent = found.display;
   viewMode = found.ceo ? "ceoHome" : "mine";
   setupViewToggle();
-  applyView();
+  if(stateLoaded){
+    applyView();
+  } else {
+    document.getElementById("ceoCards").innerHTML = '<div class="ceo-empty">טוען נתונים…</div>';
+    loadState(applyView);
+  }
 }
 
 document.getElementById("logoutLink").addEventListener("click", function(){
@@ -1038,6 +1081,7 @@ function renderCeo(){
       wrap.appendChild(row);
     });
   }
+  saveState();
 }
 
 function renderVacationControls(){
@@ -1090,12 +1134,18 @@ var sel2 = document.getElementById("filterProj2");
 var sel3 = document.getElementById("filterProj3");
 var selPL = document.getElementById("filterProjPL");
 var selExcelProj = document.getElementById("excelProj");
-projects.forEach(function(p){
-  var o2 = document.createElement("option"); o2.value = p; o2.textContent = p; sel2.appendChild(o2);
-  var o3 = document.createElement("option"); o3.value = p; o3.textContent = p; sel3.appendChild(o3);
-  var oPL = document.createElement("option"); oPL.value = p; oPL.textContent = p; selPL.appendChild(oPL);
-  var oEx = document.createElement("option"); oEx.value = p; oEx.textContent = p; selExcelProj.appendChild(oEx);
-});
+function rebuildProjectDropdowns(){
+  [sel2, sel3, selPL, selExcelProj].forEach(function(sel){
+    var hasAllOption = sel === sel2 || sel === sel3 || sel === selPL;
+    var prevValue = sel.value;
+    sel.innerHTML = hasAllOption ? '<option value="">כל הפרויקטים</option>' : "";
+    projects.forEach(function(p){
+      var o = document.createElement("option"); o.value = p; o.textContent = p; sel.appendChild(o);
+    });
+    if(projects.indexOf(prevValue) !== -1 || prevValue === "") sel.value = prevValue;
+  });
+}
+rebuildProjectDropdowns();
 
 var flashApproved = {};
 
@@ -1301,6 +1351,7 @@ function renderTab2(){
   document.getElementById("statOpen").textContent = base.filter(function(r){return r.status === "open";}).length;
   document.getElementById("statClosed").textContent = base.filter(function(r){return r.status === "closed";}).length;
   document.getElementById("statReturned").textContent = base.filter(function(r){return r.status === "returned";}).length;
+  saveState();
 }
 
 /* ---------- ALL UNITS + EXCEL ---------- */
@@ -1464,6 +1515,7 @@ function renderTab3(){
       });
     }
   });
+  saveState();
 }
 
 /* ---------- PRICE LIST (מחירון חברה) — reads the same allUnits inventory ---------- */
@@ -1569,6 +1621,7 @@ function renderPriceList(){
       });
     }
   });
+  saveState();
 }
 
 document.getElementById("searchPL").addEventListener("input", renderPriceList);
@@ -1578,9 +1631,7 @@ selPL.addEventListener("change", renderPriceList);
 function ensureProjectOption(proj){
   if(projects.indexOf(proj) === -1){
     projects.push(proj);
-    [sel2, sel3, selPL, selExcelProj].forEach(function(sel){
-      var o = document.createElement("option"); o.value = proj; o.textContent = proj; sel.appendChild(o);
-    });
+    rebuildProjectDropdowns();
   }
 }
 
