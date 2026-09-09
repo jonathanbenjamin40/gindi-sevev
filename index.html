@@ -382,43 +382,48 @@
       <div class="panel-head">
         <div>
           <h2>כלל הדירות בפרויקט</h2>
-          <p>טעינת מיפוי דירות מקובץ אקסל, וסימון דירה שנמכרה כדי להתחיל עבורה את הסבב</p>
+          <p>מלאי הדירות האמיתי — מקור האמת היחיד, גם ל"כלל הדירות" וגם ל"מחירון חברה". סימון דירה כנמכרה מתחיל עבורה את הסבב</p>
         </div>
       </div>
       <div class="upload-box">
-        <div class="txt">קובץ אקסל/CSV עם עמודות <strong>פרויקט</strong>, <strong>דירה</strong> (למשל "בניין A · דירה 12") ו־<strong>נתיב</strong> (הנתיב לתיקיית הדירה בכונן Z) — ייטען לרשימה שלמטה.</div>
+        <div class="txt">קובץ אקסל/CSV בפורמט המחירון (עמודות: <strong>בניין</strong>, <strong>מס' דירה</strong>, <strong>קומה</strong>, <strong>מס' חדרים</strong>, <strong>טיפוס</strong>, <strong>כיוון</strong>, <strong>שטח מכר</strong>, <strong>מרפסת</strong>, <strong>מחירון</strong>). הקובץ בד"כ לפרויקט אחד — בחר אותו כאן; אם יש בקובץ עמודת "פרויקט" היא תגבר. דירה קיימת (לפי בניין+מספר) תעודכן, דירה חדשה תיווצר.</div>
+        <select id="excelProj" style="height:36px;"></select>
         <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
       </div>
+      <div id="unitAddForm" class="upload-box" style="align-items:flex-end; flex-wrap:wrap; gap:12px;"></div>
       <div class="filters">
-        <input type="text" id="search3" placeholder="חיפוש לפי פרויקט או דירה">
+        <input type="text" id="search3" placeholder="חיפוש לפי פרויקט, בניין או מספר דירה">
         <select id="filterProj3"><option value="">כל הפרויקטים</option></select>
       </div>
-      <table>
-        <thead>
-          <tr><th>פרויקט</th><th>בניין / דירה</th><th style="text-align:center;">סטטוס מכירה</th><th></th></tr>
-        </thead>
-        <tbody id="tbody3"></tbody>
-      </table>
+      <div style="overflow-x:auto;">
+        <table style="min-width:920px;">
+          <thead>
+            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מרפסת</th><th>מחירון</th><th style="text-align:center;">סטטוס</th><th></th></tr>
+          </thead>
+          <tbody id="tbody3"></tbody>
+        </table>
+      </div>
     </section>
 
     <section id="pricelist-view" class="view">
       <div class="panel-head">
         <div>
           <h2>מחירון חברה</h2>
-          <p>מחיר המחירון הרשמי לכל דירה, מול המחיר שדווח בפועל בסבב הבדיקות</p>
+          <p>אותו מלאי דירות בדיוק (מסך "כלל הדירות") — כאן בתצוגת מחירון, מול מה שדווח בפועל בסבב הבדיקות</p>
         </div>
       </div>
       <div class="filters">
-        <input type="text" id="searchPL" placeholder="חיפוש לפי פרויקט או דירה">
+        <input type="text" id="searchPL" placeholder="חיפוש לפי פרויקט, בניין או מספר דירה">
         <select id="filterProjPL"><option value="">כל הפרויקטים</option></select>
       </div>
-      <div id="plAddForm" class="upload-box" style="align-items:flex-end; flex-wrap:wrap; gap:12px;"></div>
-      <table>
-        <thead>
-          <tr><th>פרויקט</th><th>דירה</th><th>מחיר מחירון</th><th style="text-align:center;">מצב</th><th></th></tr>
-        </thead>
-        <tbody id="tbodyPL"></tbody>
-      </table>
+      <div style="overflow-x:auto;">
+        <table style="min-width:920px;">
+          <thead>
+            <tr><th>פרויקט</th><th>בניין</th><th>דירה</th><th>קומה</th><th>חדרים</th><th>טיפוס</th><th>כיוון</th><th>שטח מכר</th><th>מחירון</th><th style="text-align:center;">מצב</th></tr>
+          </thead>
+          <tbody id="tbodyPL"></tbody>
+        </table>
+      </div>
       <div class="legend">
         <span><span class="dot" style="background:var(--ok);"></span>תקין — תואם למחירון</span>
         <span><span class="dot" style="background:var(--bad);"></span>לא תקין — אי-התאמה</span>
@@ -510,59 +515,28 @@ function formatDuration(ms){
 var NOW = Date.now();
 var DAY = 86400000, HOUR = 3600000;
 
-var reviewData = [
-  {id:"GND-1042", proj:"גליל ים", unit:"בניין A · דירה 12", client:"דוד כהן", checkCur:9, status:"closed", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-14*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1043", proj:"גליל ים", unit:"בניין A · דירה 14", client:"מיכל לוי", checkCur:2, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY-4*HOUR},
-  {id:"GND-1044", proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", client:"רון ישראלי", checkCur:5, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-3*DAY},
-  {id:"GND-1045", proj:"גינדי קריית אונו", unit:"בניין C · דירה 21", client:"נועה אברהם", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-12*HOUR, stationEnteredAt:NOW-12*HOUR},
-  {id:"GND-1046", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 07", client:"איתי פרידמן", checkCur:4, status:"returned", viewed:true, docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY,
-    history:[], returnInfo:{roleLabel:"מחלקת דיירים", target:"משפטית", note:"אי-התאמה בין ההסכם לנספח — נמכר מחסן אך בהסכם נרשם שלא נמכר", date:"15.08.2026"}},
-  {id:"GND-1047", proj:"גליל ים", unit:"בניין B · דירה 19", client:"דנה שפירא", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-1*DAY-2*HOUR},
-  {id:"GND-1048", proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", client:"עומר בן-דוד", checkCur:4, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-1*DAY-6*HOUR},
-  {id:"GND-1049", proj:"גליל ים", unit:"בניין A · דירה 03", client:"הילה מזרחי", checkCur:0, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*HOUR, stationEnteredAt:NOW-3*HOUR},
-  {id:"GND-1050", proj:"גינדי הוד השרון", unit:"בניין C · דירה 11", client:"אלון גבאי", checkCur:1, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-1*DAY, stationEnteredAt:NOW-8*HOUR},
-  {id:"GND-1051", proj:"גינדי קריית אונו", unit:"בניין A · דירה 05", client:"שירה כץ", checkCur:1, status:"open", viewed:false, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-2*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1052", proj:"גליל ים", unit:"בניין B · דירה 22", client:"יאיר שלום", checkCur:3, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-2*DAY},
-  {id:"GND-1053", proj:"פארק גינדי ראשון לציון", unit:"בניין B · דירה 14", client:"מאיה אביטן", checkCur:6, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-2*DAY-4*HOUR},
-  {id:"GND-1054", proj:"גינדי הוד השרון", unit:"בניין A · דירה 17", client:"תום לוגסי", checkCur:8, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-10*DAY, stationEnteredAt:NOW-5*HOUR},
-  {id:"GND-1055", proj:"גליל ים", unit:"בניין A · דירה 04", client:"רותם אזולאי", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-8*DAY, stationEnteredAt:NOW-1*DAY},
-  {id:"GND-1056", proj:"גליל ים", unit:"בניין B · דירה 12", client:"נדב פרץ", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-7*DAY, stationEnteredAt:NOW-1*DAY-3*HOUR},
-  {id:"GND-1057", proj:"גינדי הוד השרון", unit:"בניין C · דירה 02", client:"קרן שגיא", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-16*HOUR},
-  {id:"GND-1058", proj:"גינדי קריית אונו", unit:"בניין A · דירה 18", client:"איתמר כהן", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-9*DAY, stationEnteredAt:NOW-2*DAY-2*HOUR},
-  {id:"GND-1059", proj:"גינדי קריית אונו", unit:"בניין B · דירה 06", client:"מור אשכנזי", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-5*DAY, stationEnteredAt:NOW-20*HOUR},
-  {id:"GND-1060", proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 10", client:"ליאור בר", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-11*DAY, stationEnteredAt:NOW-2*DAY},
-  {id:"GND-1061", proj:"פארק גינדי ראשון לציון", unit:"בניין C · דירה 08", client:"עדי טל", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-10*HOUR},
-  {id:"GND-1062", proj:"גליל ים", unit:"בניין C · דירה 30", client:"אורי נחום", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-6*DAY, stationEnteredAt:NOW-1*DAY-8*HOUR},
-  {id:"GND-1063", proj:"גינדי הוד השרון", unit:"בניין B · דירה 21", client:"שני מלכה", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-3*DAY, stationEnteredAt:NOW-14*HOUR},
-  {id:"GND-1064", proj:"גליל ים", unit:"בניין C · דירה 05", client:"נועם רזון", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-9*HOUR, listPriceEntered:2340000, floorPriceEntered:2280000},
-  {id:"GND-1065", proj:"גינדי קריית אונו", unit:"בניין A · דירה 11", client:"דנה אור", checkCur:7, status:"open", viewed:true, returnInfo:null, history:[], docPath:testDocPath, openedAt:NOW-4*DAY, stationEnteredAt:NOW-11*HOUR, listPriceEntered:1750000, floorPriceEntered:1700000}
-];
+var reviewData = [];
 
-var allUnits = [
-  {proj:"גליל ים", unit:"בניין A · דירה 15", sold:false, path:testDocPath},
-  {proj:"גליל ים", unit:"בניין B · דירה 20", sold:false, path:testDocPath},
-  {proj:"גינדי הוד השרון", unit:"בניין B · דירה 04", sold:false, path:testDocPath},
-  {proj:"גינדי קריית אונו", unit:"בניין C · דירה 22", sold:false, path:testDocPath},
-  {proj:"פארק גינדי ראשון לציון", unit:"בניין A · דירה 08", sold:false, path:testDocPath}
-];
-
-// "מחירון חברה" — official list price per apartment, set by CEO/Yossi, compared
-// against the price entered live by the accounting stations' checklist.
-var priceList = [
-  {proj:"גינדי הוד השרון", unit:"בניין A · דירה 09", price:1850000},
-  {proj:"גינדי הוד השרון", unit:"בניין B · דירה 03", price:2100000},
-  {proj:"גליל ים", unit:"בניין A · דירה 12", price:1990000},
-  {proj:"גליל ים", unit:"בניין B · דירה 19", price:2050000},
-  {proj:"גליל ים", unit:"בניין A · דירה 14", price:1920000},
-  {proj:"גליל ים", unit:"בניין C · דירה 05", price:2200000},
-  {proj:"גינדי קריית אונו", unit:"בניין A · דירה 11", price:1750000}
-];
+// Master apartment inventory — this is the single source of truth for every
+// unit (matches the real "מחירון" Excel format: בניין, מס' דירה, קומה,
+// מס' חדרים, טיפוס, כיוון, שטח מכר, מרפסת, מחירון). "כלל הדירות בפרויקט"
+// and "מחירון חברה" both read/write this same array — no separate duplicate
+// list — so there is never a question of which record is authoritative.
+// unitKey is generated automatically (never typed by hand) and is the join
+// key used everywhere a case needs to reference back to its real apartment.
+function makeUnitKey(proj, building, aptNumber){
+  return (proj||"").trim()+"|"+(building||"").trim()+"|"+(aptNumber||"").trim();
+}
+function unitLabel(building, aptNumber){
+  return "בניין "+building+" · דירה "+aptNumber;
+}
+var allUnits = [];
 
 var currentUser = null;
 var expanded = {};
 var segFilter = "all";
 var viewMode = "mine";
-var caseCounter = 1065;
+var caseCounter = 1000;
 
 function isOnVacation(u){
   if(!u || !u.vacation || !u.vacation.active) return false;
@@ -1114,10 +1088,12 @@ document.getElementById("ceoViewAll").addEventListener("click", function(){
 var sel2 = document.getElementById("filterProj2");
 var sel3 = document.getElementById("filterProj3");
 var selPL = document.getElementById("filterProjPL");
+var selExcelProj = document.getElementById("excelProj");
 projects.forEach(function(p){
   var o2 = document.createElement("option"); o2.value = p; o2.textContent = p; sel2.appendChild(o2);
   var o3 = document.createElement("option"); o3.value = p; o3.textContent = p; sel3.appendChild(o3);
   var oPL = document.createElement("option"); oPL.value = p; oPL.textContent = p; selPL.appendChild(oPL);
+  var oEx = document.createElement("option"); oEx.value = p; oEx.textContent = p; selExcelProj.appendChild(oEx);
 });
 
 var flashApproved = {};
@@ -1327,13 +1303,40 @@ function renderTab2(){
 }
 
 /* ---------- ALL UNITS + EXCEL ---------- */
+function renderUnitAddForm(){
+  var host = document.getElementById("unitAddForm");
+  var projOptions = projects.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join("");
+  host.innerHTML =
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">פרויקט</label>'+
+    '<select id="uNewProj" style="height:36px;">'+projOptions+'</select></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">בניין</label>'+
+    '<input type="text" id="uNewBuilding" placeholder="A" style="height:36px; width:70px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מס\' דירה</label>'+
+    '<input type="text" id="uNewApt" placeholder="12" style="height:36px; width:70px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
+    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מחירון</label>'+
+    '<input type="number" id="uNewPrice" placeholder="1850000" style="height:36px; width:120px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
+    '<button class="start-btn" id="uAddBtn">הוספת דירה למלאי</button>';
+  document.getElementById("uAddBtn").addEventListener("click", function(){
+    var proj = document.getElementById("uNewProj").value;
+    var building = document.getElementById("uNewBuilding").value.trim();
+    var aptNumber = document.getElementById("uNewApt").value.trim();
+    var price = document.getElementById("uNewPrice").value;
+    if(!building || !aptNumber) return;
+    var key = makeUnitKey(proj, building, aptNumber);
+    if(allUnits.some(function(u){ return u.unitKey === key; })){ alert("דירה זו כבר קיימת במלאי"); return; }
+    allUnits.push({proj:proj, building:building, aptNumber:aptNumber, unitKey:key, price: price?Number(price):"", sold:false, path:testDocPath});
+    renderTab3();
+  });
+}
+
 function renderTab3(){
+  renderUnitAddForm();
   var q = document.getElementById("search3").value.trim();
   var pf = sel3.value;
   var tbody = document.getElementById("tbody3");
   tbody.innerHTML = "";
   allUnits.filter(function(u){
-    var matchQ = !q || (u.proj+u.unit).indexOf(q) !== -1;
+    var matchQ = !q || (u.proj+u.building+u.aptNumber).indexOf(q) !== -1;
     var matchP = !pf || u.proj === pf;
     return matchQ && matchP;
   }).forEach(function(u){
@@ -1341,11 +1344,20 @@ function renderTab3(){
     var actionCell = u.sold
       ? '<span style="font-size:12px; color:var(--ink-faint);">בסבב</span>'
       : '<button class="start-btn">סימון כנמכר – התחלת סבב</button>';
+    var delBtn = (!u.sold) ? '<button class="reject-btn" style="height:26px; padding:0 8px; margin-right:6px;">מחיקה</button>' : "";
     tr.innerHTML =
       '<td>'+u.proj+'</td>'+
-      '<td style="color:var(--ink-soft);">'+u.unit+'</td>'+
+      '<td style="color:var(--ink-soft);">'+u.building+'</td>'+
+      '<td style="color:var(--ink-soft);">'+u.aptNumber+'</td>'+
+      '<td>'+(u.floor||"—")+'</td>'+
+      '<td>'+(u.rooms||"—")+'</td>'+
+      '<td>'+(u.type||"—")+'</td>'+
+      '<td>'+(u.direction||"—")+'</td>'+
+      '<td>'+(u.saleArea||"—")+'</td>'+
+      '<td>'+(u.balcony||"—")+'</td>'+
+      '<td>'+(u.price?Number(u.price).toLocaleString():"—")+'</td>'+
       '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+(u.sold?"ok":"neutral")+'"></span>'+(u.sold?"נמכרה":"למכירה")+'</span></td>'+
-      '<td style="text-align:left;">'+actionCell+'</td>';
+      '<td style="text-align:left; white-space:nowrap;">'+actionCell+delBtn+'</td>';
     tbody.appendChild(tr);
 
     var startBtn = tr.querySelector(".start-btn");
@@ -1354,28 +1366,35 @@ function renderTab3(){
         u.sold = true;
         caseCounter++;
         reviewData.push({
-          id:"GND-"+caseCounter, proj:u.proj, unit:u.unit, client:"— טרם עודכן —",
+          id:"GND-"+caseCounter, proj:u.proj, unit:unitLabel(u.building,u.aptNumber), unitKey:u.unitKey, client:"— טרם עודכן —",
           checkCur:0, status:"open", viewed:false, returnInfo:null, history:[],
           docPath: u.path || testDocPath, openedAt:Date.now(), stationEnteredAt:Date.now()
         });
         renderTab3();
       });
     }
+    var delUnitBtn = tr.querySelector(".reject-btn");
+    if(delUnitBtn){
+      delUnitBtn.addEventListener("click", function(){
+        allUnits.splice(allUnits.indexOf(u),1);
+        renderTab3();
+      });
+    }
   });
 }
 
-/* ---------- PRICE LIST (מחירון חברה) ---------- */
+/* ---------- PRICE LIST (מחירון חברה) — reads the same allUnits inventory ---------- */
 function getCasePriceStatus(r){
-  var pl = priceList.filter(function(p){ return p.proj === r.proj && p.unit === r.unit; })[0];
-  if(!pl) return {state:"nodata"};
+  var unit = allUnits.filter(function(u){ return u.unitKey === r.unitKey; })[0];
+  if(!unit || !unit.price) return {state:"nodata"};
   if(r.listPriceEntered === undefined || r.listPriceEntered === null || r.listPriceEntered === ""){
     return {state:"pending"};
   }
-  var ok = Number(r.listPriceEntered) === Number(pl.price);
+  var ok = Number(r.listPriceEntered) === Number(unit.price);
   if(!ok && r.checkCur > CEO_STATION_INDEX){
-    return {state:"override", listPrice:pl.price};
+    return {state:"override", listPrice:unit.price};
   }
-  return {state: ok ? "ok" : "mismatch", listPrice:pl.price};
+  return {state: ok ? "ok" : "mismatch", listPrice:unit.price};
 }
 function canSeePricing(){
   return !!(currentUser && (currentUser.ceo || currentUser.username === "יוסי"));
@@ -1408,109 +1427,55 @@ function priceStatusDotHtml(r){
   return '<span class="price-dot" style="background:var(--'+info.dot+');" title="'+info.label+'"></span>';
 }
 
-function getPriceStatus(plRow){
+// Per-unit status for the מחירון screen — looks up whichever case (if any) is
+// currently open against this exact unitKey.
+function getUnitPriceStatus(unit){
   var match = reviewData.filter(function(r){
-    return r.proj === plRow.proj && r.unit === plRow.unit && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
+    return r.unitKey === unit.unitKey && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
   })[0];
   if(!match) return {state:"pending"};
-  var ok = Number(match.listPriceEntered) === Number(plRow.price);
+  var ok = Number(match.listPriceEntered) === Number(unit.price);
   if(!ok && match.checkCur > CEO_STATION_INDEX){
     return {state:"override", caseId:match.id, entered:match.listPriceEntered};
   }
   return {state: ok ? "ok" : "mismatch", caseId:match.id, entered:match.listPriceEntered};
 }
 
-function renderPriceListAddForm(){
-  var host = document.getElementById("plAddForm");
-  var projOptions = projects.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join("");
-  host.innerHTML =
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">פרויקט</label>'+
-    '<select id="plNewProj" style="height:36px;">'+projOptions+'</select></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">דירה</label>'+
-    '<input type="text" id="plNewUnit" placeholder="בניין A · דירה 12" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px;"></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">מחיר מחירון</label>'+
-    '<input type="number" id="plNewPrice" placeholder="1850000" style="height:36px; border:none; border-bottom:1px solid var(--line-strong); background:transparent; padding:0 4px; width:130px;"></div>'+
-    '<button class="start-btn" id="plAddBtn">הוספה למחירון</button>'+
-    '<div style="border-right:1px solid var(--line-strong); height:36px; margin:0 4px;"></div>'+
-    '<div><label style="font-size:11px; color:var(--ink-faint); display:block; margin-bottom:4px;">טעינת רשומות מאקסל</label>'+
-    '<input type="file" id="plExcelInput" accept=".xlsx,.xls,.csv" style="font-size:12px;"></div>';
-  document.getElementById("plAddBtn").addEventListener("click", function(){
-    var proj = document.getElementById("plNewProj").value;
-    var unit = document.getElementById("plNewUnit").value.trim();
-    var price = document.getElementById("plNewPrice").value;
-    if(!unit || !price) return;
-    priceList.push({proj:proj, unit:unit, price:Number(price)});
-    renderPriceList();
-  });
-  document.getElementById("plExcelInput").addEventListener("change", function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    var reader = new FileReader();
-    reader.onload = function(evt){
-      try{
-        var data = new Uint8Array(evt.target.result);
-        var wb = XLSX.read(data, {type:"array"});
-        var sheet = wb.Sheets[wb.SheetNames[0]];
-        var rows = XLSX.utils.sheet_to_json(sheet);
-        var added = 0;
-        rows.forEach(function(row){
-          var proj = row["פרויקט"] || row["Project"];
-          var unit = row["דירה"] || row["יחידה"] || row["בניין/דירה"] || row["Unit"];
-          var price = row["מחיר"] || row["מחיר מחירון"] || row["Price"];
-          if(proj && unit && price){
-            priceList.push({proj:String(proj).trim(), unit:String(unit).trim(), price:Number(price)});
-            added++;
-          }
-        });
-        renderPriceList();
-        alert(added + " רשומות נטענו למחירון");
-      } catch(err){
-        alert("שגיאה בקריאת הקובץ — יש לוודא עמודות \"פרויקט\", \"דירה\" ו\"מחיר\"");
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
 function renderPriceList(){
-  renderPriceListAddForm();
   var q = document.getElementById("searchPL").value.trim();
   var pf = selPL.value;
   var tbody = document.getElementById("tbodyPL");
   tbody.innerHTML = "";
-  priceList.filter(function(p){
-    var matchQ = !q || (p.proj+p.unit).indexOf(q) !== -1;
-    var matchP = !pf || p.proj === pf;
+  allUnits.filter(function(u){
+    var matchQ = !q || (u.proj+u.building+u.aptNumber).indexOf(q) !== -1;
+    var matchP = !pf || u.proj === pf;
     return matchQ && matchP;
-  }).forEach(function(p, idx){
-    var st = getPriceStatus(p);
+  }).forEach(function(u){
+    var st = getUnitPriceStatus(u);
     var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
     var label = st.state === "ok" ? "תקין" : st.state === "mismatch" ? "לא תקין" : st.state === "override" ? "אושר למרות אי-התאמה" : "טרם דווח";
     var sub = st.caseId ? ' <span style="color:var(--ink-faint); font-size:11px;">('+st.caseId+" · דווח: "+Number(st.entered).toLocaleString()+')</span>' : "";
     var tr = document.createElement("tr");
     var priceCell = currentUser.ceo
-      ? '<input type="number" class="pl-price-edit" data-idx="'+idx+'" value="'+p.price+'" style="width:110px; border:none; border-bottom:1px dashed var(--ink-faint); background:transparent; font-family:\'Heebo\', sans-serif; font-size:13.5px; color:var(--ink); padding:2px 0;">'
-      : Number(p.price).toLocaleString();
-    var delCell = currentUser.ceo ? '<button class="reject-btn" data-idx="'+idx+'" style="height:28px; padding:0 10px;">מחיקה</button>' : "";
+      ? '<input type="number" class="pl-price-edit" value="'+(u.price||"")+'" style="width:110px; border:none; border-bottom:1px dashed var(--ink-faint); background:transparent; font-family:\'Heebo\', sans-serif; font-size:13.5px; color:var(--ink); padding:2px 0;">'
+      : (u.price ? Number(u.price).toLocaleString() : "—");
     tr.innerHTML =
-      '<td>'+p.proj+'</td>'+
-      '<td style="color:var(--ink-soft);">'+p.unit+'</td>'+
+      '<td>'+u.proj+'</td>'+
+      '<td style="color:var(--ink-soft);">'+u.building+'</td>'+
+      '<td style="color:var(--ink-soft);">'+u.aptNumber+'</td>'+
+      '<td>'+(u.floor||"—")+'</td>'+
+      '<td>'+(u.rooms||"—")+'</td>'+
+      '<td>'+(u.type||"—")+'</td>'+
+      '<td>'+(u.direction||"—")+'</td>'+
+      '<td>'+(u.saleArea||"—")+'</td>'+
       '<td>'+priceCell+'</td>'+
-      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>'+
-      '<td style="text-align:left;">'+delCell+'</td>';
+      '<td style="text-align:center;"><span class="status" style="justify-content:center;"><span class="dot '+dot+'"></span>'+label+sub+'</span></td>';
     tbody.appendChild(tr);
-    var delBtn = tr.querySelector("[data-idx].reject-btn");
-    if(delBtn){
-      delBtn.addEventListener("click", function(){
-        priceList.splice(idx,1);
-        renderPriceList();
-      });
-    }
     var priceEdit = tr.querySelector(".pl-price-edit");
     if(priceEdit){
       priceEdit.addEventListener("change", function(){
         var v = Number(priceEdit.value);
-        if(!isNaN(v) && v > 0){ p.price = v; renderPriceList(); }
+        if(!isNaN(v) && v > 0){ u.price = v; renderPriceList(); }
       });
     }
   });
@@ -1519,9 +1484,47 @@ function renderPriceList(){
 document.getElementById("searchPL").addEventListener("input", renderPriceList);
 selPL.addEventListener("change", renderPriceList);
 
+/* ---------- Shared Excel upsert into the unit inventory ---------- */
+function ensureProjectOption(proj){
+  if(projects.indexOf(proj) === -1){
+    projects.push(proj);
+    [sel2, sel3, selPL, selExcelProj].forEach(function(sel){
+      var o = document.createElement("option"); o.value = proj; o.textContent = proj; sel.appendChild(o);
+    });
+  }
+}
+function upsertUnitsFromRows(rows, defaultProj){
+  var added = 0, updated = 0;
+  rows.forEach(function(row){
+    var proj = String(row["פרויקט"] || defaultProj || "").trim();
+    var building = String(row["בניין"] || "").trim();
+    var aptNumber = String(row["מס' דירה"] || row["מספר דירה"] || row["דירה"] || "").trim();
+    if(!proj || !building || !aptNumber) return;
+    ensureProjectOption(proj);
+    var key = makeUnitKey(proj, building, aptNumber);
+    var fields = {
+      floor: row["קומה"], rooms: row["מס' חדרים"] || row["חדרים"], type: row["טיפוס"],
+      direction: row["כיוון"], saleArea: row["שטח מכר"] || row["שטח"], balcony: row["מרפסת"],
+      price: row["מחירון"] || row["מחיר"]
+    };
+    var existing = allUnits.filter(function(u){ return u.unitKey === key; })[0];
+    if(existing){
+      Object.keys(fields).forEach(function(k){ if(fields[k] !== undefined && fields[k] !== "") existing[k] = fields[k]; });
+      updated++;
+    } else {
+      var u = {proj:proj, building:building, aptNumber:aptNumber, unitKey:key, sold:false, path:testDocPath};
+      Object.keys(fields).forEach(function(k){ if(fields[k] !== undefined && fields[k] !== "") u[k] = fields[k]; });
+      allUnits.push(u);
+      added++;
+    }
+  });
+  return {added:added, updated:updated};
+}
+
 document.getElementById("excelInput").addEventListener("change", function(e){
   var file = e.target.files[0];
   if(!file) return;
+  var defaultProj = selExcelProj.value;
   var reader = new FileReader();
   reader.onload = function(evt){
     try{
@@ -1529,25 +1532,11 @@ document.getElementById("excelInput").addEventListener("change", function(e){
       var wb = XLSX.read(data, {type:"array"});
       var sheet = wb.Sheets[wb.SheetNames[0]];
       var rows = XLSX.utils.sheet_to_json(sheet);
-      var added = 0;
-      rows.forEach(function(row){
-        var proj = row["פרויקט"] || row["Project"];
-        var unit = row["דירה"] || row["יחידה"] || row["בניין/דירה"] || row["Unit"];
-        var path = row["נתיב"] || row["תיקייה"] || row["Path"];
-        if(proj && unit){
-          allUnits.push({proj:String(proj).trim(), unit:String(unit).trim(), sold:false, path: path ? String(path).trim() : testDocPath});
-          if(projects.indexOf(String(proj).trim()) === -1){
-            projects.push(String(proj).trim());
-            var opt2 = document.createElement("option"); opt2.value = proj; opt2.textContent = proj; sel2.appendChild(opt2);
-            var opt3 = document.createElement("option"); opt3.value = proj; opt3.textContent = proj; sel3.appendChild(opt3);
-          }
-          added++;
-        }
-      });
+      var result = upsertUnitsFromRows(rows, defaultProj);
       renderTab3();
-      alert(added + " דירות נטענו בהצלחה");
+      alert(result.added+" דירות נוספו, "+result.updated+" עודכנו");
     } catch(err){
-      alert("שגיאה בקריאת הקובץ — יש לוודא עמודות \"פרויקט\", \"דירה\" ו\"נתיב\"");
+      alert("שגיאה בקריאת הקובץ — יש לוודא עמודות בניין ומס' דירה לפחות");
     }
   };
   reader.readAsArrayBuffer(file);
