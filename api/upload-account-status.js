@@ -4,6 +4,7 @@
 // Response (JSON):      { ok:true, fileId, viewUrl }
 
 const { google } = require("googleapis");
+const { Readable } = require("stream");
 const { getGoogleAuthClient } = require("./_googleAuth");
 
 const FOLDER_ID = process.env.DRIVE_ACCOUNT_STATUS_FOLDER_ID;
@@ -35,7 +36,7 @@ module.exports = async function handler(req, res) {
     },
     media: {
       mimeType,
-      body: Buffer.from(contentBase64, "base64"),
+      body: Readable.from(Buffer.from(contentBase64, "base64")),
     },
     fields: "id, webViewLink",
   });
