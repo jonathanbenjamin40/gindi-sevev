@@ -1,15 +1,25 @@
 // /api/upload-account-status.js
 //
+// Called from the portal's browser when the "הנהלת חשבונות" station uploads
+// an account-status file (screenshot/PDF) for a specific case.
+//
 // Request body (JSON): { caseId, filename, mimeType, contentBase64 }
 // Response (JSON):      { ok:true, fileId, viewUrl }
+//
+// The returned viewUrl is what gets written into the case's accountStatusUrl
+// field in the sheet — the same field the frontend already reads to show the
+// "מצב חשבון" button. Every filename is prefixed with the case ID so the
+// file can never be confused with another apartment's file.
 
 const { google } = require("googleapis");
 const { Readable } = require("stream");
 const { getGoogleAuthClient } = require("./_googleAuth");
 
-const FOLDER_ID = process.env.DRIVE_ACCOUNT_STATUS_FOLDER_ID;
+const FOLDER_ID = process.env.DRIVE_ACCOUNT_STATUS_FOLDER_ID; // 1fPqtbPgV2VaN3jUSWgWYPRZfweH5mFvb
 
 function getDriveClient() {
+  // Same OAuth2 client used for Sheets — the refresh token already carries
+  // both the spreadsheets and drive scopes granted in the OAuth Playground.
   return google.drive({ version: "v3", auth: getGoogleAuthClient() });
 }
 
@@ -22,6 +32,7 @@ module.exports = async function handler(req, res) {
   if (!caseId || !filename || !mimeType || !contentBase64) {
     return res.status(400).json({ ok: false, error: "Missing caseId, filename, mimeType or contentBase64" });
   }
+  // Basic guard against path/ID injection in the case ID before it goes into a filename.
   if (!/^[A-Za-z0-9-]+$/.test(caseId)) {
     return res.status(400).json({ ok: false, error: "Invalid caseId" });
   }
@@ -41,6 +52,8 @@ module.exports = async function handler(req, res) {
     fields: "id, webViewLink",
   });
 
+  // Anyone in the organization with the link can view — adjust to a specific
+  // domain restriction if Gindi's Drive admin prefers that over "anyone with link".
   await drive.permissions.create({
     fileId: created.data.id,
     requestBody: { role: "reader", type: "anyone" },
