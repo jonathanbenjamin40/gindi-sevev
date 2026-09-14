@@ -882,15 +882,34 @@ function openApproveModal(r, stageIndex, opts){
   var confirmBtn = document.getElementById("mConfirm");
   var uploadedFiles = {};
   if(checklist){
-    document.querySelectorAll(".mClFile").forEach(function(el){
+        document.querySelectorAll(".mClFile").forEach(function(el){
       el.addEventListener("change", function(){
         var i = el.getAttribute("data-i");
-        if(el.files && el.files[0]){
-          uploadedFiles[i] = {url: URL.createObjectURL(el.files[0]), name: el.files[0].name};
-          var nameEl = document.querySelector('.cl-filename[data-i="'+i+'"]');
-          if(nameEl) nameEl.textContent = el.files[0].name;
-        }
-        checkComplete();
+        var nameEl = document.querySelector('.cl-filename[data-i="'+i+'"]');
+        if(!el.files || !el.files[0]) return;
+        var file = el.files[0];
+        if(nameEl) nameEl.textContent = "מעלה...";
+        var reader = new FileReader();
+        reader.onload = function(){
+          var base64 = reader.result.split(",")[1];
+          fetch("/api/upload-account-status", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({caseId:r.id, filename:file.name, mimeType:file.type, contentBase64:base64})
+          }).then(function(res){ return res.json(); }).then(function(data){
+            if(data.ok){
+              uploadedFiles[i] = {url:data.viewUrl, name:file.name};
+              if(nameEl) nameEl.textContent = file.name + " ✓";
+            } else {
+              if(nameEl) nameEl.textContent = "שגיאה בהעלאה";
+            }
+            checkComplete();
+          }).catch(function(){
+            if(nameEl) nameEl.textContent = "שגיאה בהעלאה";
+            checkComplete();
+          });
+        };
+        reader.readAsDataURL(file);
       });
     });
     var checkComplete = function(){
