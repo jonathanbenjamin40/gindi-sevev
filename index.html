@@ -336,7 +336,7 @@
       <div class="panel-head">
         <div>
           <h2 id="cycleTitle">סבב בדיקות</h2>
-          <p id="cycleSubtitle">דירות שנמכרו ונכנסו לסבב הבדיקה — 9 תחנות אישור לפי תפקיד</p>
+          <p id="cycleSubtitle">דירות שנמכרו ונכנסו לסבב הבדיקה — 8 תחנות אישור לפי תפקיד</p>
         </div>
       </div>
       <div id="yossiVacationBanner"></div>
@@ -444,9 +444,8 @@
 var projects = [];
 
 var checkStages = [
-  {role:"רכזת חוזים", task:"דיווח למשרד השיכון", extra:[]},
-  {role:"דיירים", task:"הזנת נתוני הסכם ותוספות", extra:[]},
-  {role:"מחלקת דיירים", task:"הזנת תוספות ופנקס שוברים", extra:["תוספות שנרשמו"]},
+  {role:"רכזת חוזים", task:"דיווח למשרד השיכון + הוספת פנקס שוברים", extra:[]},
+  {role:"מחלקת דיירים", task:"הזנת נתוני הסכם ותוספות במערכת ה-CRM", extra:["תוספות שנרשמו"]},
   {role:"סמנכ\"לית שירות ודיירים", task:"אישור שינויים", extra:["עלות שינויים"]},
   {role:"הנהלת חשבונות", task:"בדיקת נתוני משכנתא", extra:[]},
   {role:"חשבים", task:"בדיקת נספח תשלומים", extra:[]},
@@ -455,16 +454,11 @@ var checkStages = [
   {role:"סמנכ\"לית שירות ודיירים", task:"הפצת החוזה ובקרה אחרונה", extra:[]}
 ];
 
-/* Checklist infrastructure — items are placeholders until Yossi defines the real lists.
-   Keyed by station index; a station without an entry here has no checklist gate. */
-/* Checklist infrastructure — each item renders on its own row.
-   type: "text" (blank line to fill), "toggle" (on/off confirmation),
-   or "text+toggle" (a value plus a separate system-update confirmation). */
 var checklists = {
   0: [
     {type:"text", label:"אסמכתא משרד השיכון"}
   ],
-  4: [
+  3: [
     {type:"number", label:"מחיר מחירון", field:"listPriceEntered"},
     {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"text+toggle", label:"מספר מחסנים שנרכשו", toggleLabel:"עודכן במערכות"},
@@ -472,7 +466,7 @@ var checklists = {
     {type:"toggle", label:"אישור חוזה נעול במערכות כספים"},
     {type:"upload", label:"העלאת מצב חשבון (צילום מסך / קובץ)", field:"accountStatusUrl"}
   ],
-  5: [
+  4: [
     {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"text", label:"הפרש ממחיר הסף"},
     {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
@@ -481,28 +475,27 @@ var checklists = {
 
 var users = [
   {username:"רכזת חוזים", password:"1234", stations:[0], display:"רכזת חוזים", email:"secretary@gindi.co.il"},
-  {username:"דיירים", password:"1234", stations:[1,2], display:"מחלקת דיירים", email:"tenants@gindi.co.il"},
-  {username:"שרון", password:"1234", stations:[1,2,3,8], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
-  {username:"הנהח", password:"1234", stations:[4], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
-  {username:"חשבים", password:"1234", stations:[5], display:"חשבים", email:"accountants@gindi.co.il"},
-  {username:"יוסי", password:"1234", stations:[4,5,6], mineStations:[6], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[4,5], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
-  {username:"אבי", password:"1234", stations:[7], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
-  {username:"רועי", password:"1234", stations:[7], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
-  {username:"ברק", password:"1234", stations:[7], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
-  {username:"גונתן", password:"1234", stations:[7], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
+  {username:"דיירים", password:"1234", stations:[1], display:"מחלקת דיירים", email:"tenants@gindi.co.il"},
+  {username:"שרון", password:"1234", stations:[1,2,7], display:"שרון · סמנכ\"לית שירות ודיירים", email:"sharon@gindi.co.il"},
+  {username:"הנהח", password:"1234", stations:[3], display:"הנהלת חשבונות", email:"accounting@gindi.co.il"},
+  {username:"חשבים", password:"1234", stations:[4], display:"חשבים", email:"accountants@gindi.co.il"},
+  {username:"יוסי", password:"1234", stations:[3,4,5], mineStations:[5], display:"יוסי · סמנכ\"ל כספים", responsibilityStations:[3,4], responsibilityLabel:"תחנות באחריותי", email:"yossi@gindi.co.il"},
+  {username:"אבי", password:"1234", stations:[6], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
+  {username:"רועי", password:"1234", stations:[6], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
+  {username:"ברק", password:"1234", stations:[6], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
+  {username:"גונתן", password:"1234", stations:[6], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
 ];
 
 var testDocPath = "Z:\\ג'ונתן בנימין";
 function toFileUrl(p){
   var clean = p.replace(/\\/g,'/');
   var parts = clean.split('/').map(function(seg, idx){
-    if(idx === 0 && /^[A-Za-z]:$/.test(seg)) return seg; // keep the drive letter (e.g. "Z:") unencoded
+    if(idx === 0 && /^[A-Za-z]:$/.test(seg)) return seg;
     return encodeURIComponent(seg);
   });
   return 'file:///' + parts.join('/');
 }
 function toLocalExplorerUrl(p){
-  // "Local Explorer - File Manager" Chrome/Edge extension: custom scheme + raw Windows path
   return 'localexplorer:' + p;
 }
 function formatDuration(ms){
@@ -521,13 +514,6 @@ var DAY = 86400000, HOUR = 3600000;
 
 var reviewData = [];
 
-// Master apartment inventory — this is the single source of truth for every
-// unit (matches the real "מחירון" Excel format: בניין, מס' דירה, קומה,
-// מס' חדרים, טיפוס, כיוון, שטח מכר, מרפסת, מחירון). "כלל הדירות בפרויקט"
-// and "מחירון חברה" both read/write this same array — no separate duplicate
-// list — so there is never a question of which record is authoritative.
-// unitKey is generated automatically (never typed by hand) and is the join
-// key used everywhere a case needs to reference back to its real apartment.
 function makeUnitKey(proj, building, aptNumber){
   return (proj||"").trim()+"|"+(building||"").trim()+"|"+(aptNumber||"").trim();
 }
@@ -553,7 +539,7 @@ function isOnVacation(u){
 function getActiveVacationCeo(){
   return users.filter(function(u){ return u.ceo && isOnVacation(u); })[0] || null;
 }
-var CEO_STATION_INDEX = 7;
+var CEO_STATION_INDEX = 6;
 function isProxyEligible(r){
   return !!(currentUser && currentUser.username === "יוסי" && r.checkCur === CEO_STATION_INDEX && r.status === "open" && getActiveVacationCeo());
 }
@@ -570,7 +556,7 @@ var STATE_API = "/api/state";
 var saveTimer = null;
 var stateLoaded = false;
 function saveState(){
-  if(!stateLoaded) return; // never overwrite the sheet with an empty local state before the first load finished
+  if(!stateLoaded) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(function(){
     fetch(STATE_API, {
@@ -806,7 +792,7 @@ function openCaseSummaryModal(r){
   var upcomingHtml = '<div class="modal-field"><label>מה עוד נדרש עד סגירת התיק</label><div class="history-summary">';
   var anyUpcoming = false;
   checkStages.forEach(function(s, i){
-    if(i < r.checkCur) return; // already done, shown above
+    if(i < r.checkCur) return;
     anyUpcoming = true;
     var cl = checklists[i];
     var reqs = [];
@@ -885,7 +871,7 @@ function openApproveModal(r, stageIndex, opts){
   var confirmBtn = document.getElementById("mConfirm");
   var uploadedFiles = {};
   if(checklist){
-        document.querySelectorAll(".mClFile").forEach(function(el){
+    document.querySelectorAll(".mClFile").forEach(function(el){
       el.addEventListener("change", function(){
         var i = el.getAttribute("data-i");
         var nameEl = document.querySelector('.cl-filename[data-i="'+i+'"]');
@@ -1008,9 +994,9 @@ function openRejectModal(r, stageIndex){
 
 /* ---------- CEO VIEW ---------- */
 function renderCeo(){
-  var pending = reviewData.filter(function(r){ return r.checkCur === 7 && r.status === "open"; });
+  var pending = reviewData.filter(function(r){ return r.checkCur === CEO_STATION_INDEX && r.status === "open"; });
   var proxyDone = reviewData.filter(function(r){
-    return !r.retroReviewedByCeo && r.history.some(function(h){ return h.stageIndex === 7 && h.proxy; });
+    return !r.retroReviewedByCeo && r.history.some(function(h){ return h.stageIndex === CEO_STATION_INDEX && h.proxy; });
   });
   var wrap = document.getElementById("ceoCards");
   wrap.innerHTML = "";
@@ -1046,8 +1032,8 @@ function renderCeo(){
         '<button class="reject-btn ceo-return-btn">החזר חוזה לסבב</button>'+
         '<button class="summary-btn" style="margin-top:0;">סיכום תיק</button>'+
       '</div>';
-    row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, 7); });
-    row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, 7); });
+    row.querySelector(".ceo-btn").addEventListener("click", function(){ openApproveModal(r, CEO_STATION_INDEX); });
+    row.querySelector(".ceo-return-btn").addEventListener("click", function(){ openRejectModal(r, CEO_STATION_INDEX); });
     row.querySelector(".summary-btn").addEventListener("click", function(){ openCaseSummaryModal(r); });
     var accLink = row.querySelector(".accStatusLink");
     if(accLink){
@@ -1081,7 +1067,7 @@ function renderCeo(){
     sectionTitle.textContent = "אושרו על ידך על ידי ממלא מקום (בנוהל חול)";
     wrap.appendChild(sectionTitle);
     proxyDone.forEach(function(r){
-      var proxyHist = r.history.filter(function(h){ return h.stageIndex === 7 && h.proxy; }).pop();
+      var proxyHist = r.history.filter(function(h){ return h.stageIndex === CEO_STATION_INDEX && h.proxy; }).pop();
       var row = document.createElement("div");
       row.className = "ceo-row";
       row.style.background = "#F1F1F1";
@@ -1584,8 +1570,6 @@ function priceStatusDotHtml(r){
   return '<span class="price-dot" style="background:var(--'+info.dot+');" title="'+info.label+'"></span>';
 }
 
-// Per-unit status for the מחירון screen — looks up whichever case (if any) is
-// currently open against this exact unitKey.
 function getUnitPriceStatus(unit){
   var match = reviewData.filter(function(r){
     return r.unitKey === unit.unitKey && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
