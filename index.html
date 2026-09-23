@@ -478,6 +478,7 @@ var checklists = {
   4: [
     {type:"number", label:"מחיר מחירון", field:"listPriceEntered"},
     {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
+    {type:"number", label:"מחיר מכירה בפועל", field:"actualSalePrice"},
     {type:"text", label:"הפרש ממחיר הסף"},
     {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
   ]
@@ -1040,6 +1041,7 @@ function renderCeo(){
         '<div class="ceo-row-id">'+r.id+'</div>'+
         '<div class="ceo-row-title">'+r.proj+' · '+r.unit+'</div>'+
         '<div class="ceo-row-sub">לקוח: '+r.client+' &nbsp;·&nbsp; כל 7 התחנות הקודמות אושרו</div>'+
+        priceDetailsLineHtml(r)+
       '</div>'+
       '<div class="ceo-row-actions">'+
         accBtn+
@@ -1589,6 +1591,22 @@ function priceStatusDotHtml(r){
   return '<span class="price-dot" style="background:var(--'+info.dot+');" title="'+info.label+'"></span>';
 }
 
+function fmtIls(n){
+  return "₪" + Number(n).toLocaleString("he-IL");
+}
+
+function priceDetailsLineHtml(r){
+  if(!canSeePricing()) return "";
+  var hasList = r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
+  var hasFloor = r.floorPriceEntered !== undefined && r.floorPriceEntered !== null && r.floorPriceEntered !== "";
+  if(!hasList && !hasFloor) return "";
+  var parts = [];
+  if(hasList) parts.push("מחירון: " + fmtIls(r.listPriceEntered));
+  if(hasFloor) parts.push("מחיר סף: " + fmtIls(r.floorPriceEntered));
+  if(hasList && hasFloor) parts.push("הפרש: " + fmtIls(Number(r.listPriceEntered) - Number(r.floorPriceEntered)));
+  return '<div class="ceo-row-sub" style="margin-top:2px;">' + parts.join(" &nbsp;·&nbsp; ") + '</div>';
+}
+
 function getUnitPriceStatus(unit){
   var match = reviewData.filter(function(r){
     return r.unitKey === unit.unitKey && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
@@ -1889,11 +1907,15 @@ function runSigningFill(documents, fields){
   var html =
     '<h3>ממלא מסמכים…</h3>'+
     '<div id="signingProgress" class="history-summary"></div>'+
-    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;" disabled>נא להמתין</button></div>';
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;">סגור (הריצה תמשיך ברקע)</button></div>';
   document.getElementById("modalBox").innerHTML = html;
   document.getElementById("modalOverlay").classList.add("active");
   var progress = document.getElementById("signingProgress");
   var closeBtn = document.getElementById("mCancel");
+  closeBtn.addEventListener("click", function(){
+    closeModal();
+    openSigningFolder(signingCurrentFolder.id, signingCurrentFolder.name);
+  });
 
   function addLine(text, ok){
     var line = document.createElement("div");
@@ -1905,9 +1927,7 @@ function runSigningFill(documents, fields){
   var i = 0;
   function next(){
     if(i >= documents.length){
-      closeBtn.disabled = false;
       closeBtn.textContent = "סגור";
-      closeBtn.addEventListener("click", function(){ openSigningFolder(signingCurrentFolder.id, signingCurrentFolder.name); });
       return;
     }
     var doc = documents[i];
