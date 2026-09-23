@@ -12,7 +12,6 @@
 // file can never be confused with another apartment's file.
 
 const { google } = require("googleapis");
-const { Readable } = require("stream");
 const { getGoogleAuthClient } = require("./_googleAuth");
 
 const FOLDER_ID = process.env.DRIVE_ACCOUNT_STATUS_FOLDER_ID; // 1fPqtbPgV2VaN3jUSWgWYPRZfweH5mFvb
@@ -47,7 +46,7 @@ module.exports = async function handler(req, res) {
     },
     media: {
       mimeType,
-      body: Readable.from(Buffer.from(contentBase64, "base64")),
+      body: Buffer.from(contentBase64, "base64"),
     },
     fields: "id, webViewLink",
   });

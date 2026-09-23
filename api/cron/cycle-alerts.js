@@ -34,8 +34,9 @@ const DISTRIBUTION_LIST = (process.env.ALERT_RECIPIENTS || "")
 // Mirrors the 10 stations defined in the portal (checkStages), for readable
 // email text. Keep this in sync if the station list changes.
 const STATION_LABELS = [
-  "רכזת חוזים · דיווח למשרד השיכון + הוספת פנקס שוברים",
-  "מחלקת דיירים · הזנת נתוני הסכם ותוספות במערכת ה-CRM",
+  "רכזת חוזים · דיווח למשרד השיכון",
+  "דיירים · הזנת נתוני הסכם ותוספות",
+  "מחלקת דיירים · הזנת תוספות ופנקס שוברים",
   'סמנכ"לית שירות ודיירים · אישור שינויים',
   "הנהלת חשבונות · בדיקת נתוני משכנתא",
   "חשבים · בדיקת נספח תשלומים",

@@ -433,6 +433,17 @@
       </div>
     </section>
 
+    <section id="signing-view" class="view">
+      <div class="panel-head">
+        <div>
+          <h2 id="signingTitle">חיתום מסמכים</h2>
+          <p id="signingSubtitle">בחר תיקיית דירה מתוך Drive כדי לראות ולמלא את מסמכי ההסכם שלה</p>
+        </div>
+        <button class="start-btn" id="signingBackBtn" style="display:none;">← חזרה לתיקיות</button>
+      </div>
+      <div id="signingBody">טוען…</div>
+    </section>
+
   </main>
 
   <footer>ניהול סבב בדיקות · גינדי החזקות — מוקאפ עיצובי לצורכי בחינת תהליך</footer>
@@ -482,7 +493,8 @@ var users = [
   {username:"אבי", password:"1234", stations:[6], display:"אבי · מנכ\"ל", ceo:true, email:"avi@gindi.co.il"},
   {username:"רועי", password:"1234", stations:[6], display:"רועי · מנכ\"ל", ceo:true, email:"roi@gindi.co.il"},
   {username:"ברק", password:"1234", stations:[6], display:"ברק · מנכ\"ל", ceo:true, email:"barak@gindi.co.il"},
-  {username:"גונתן", password:"1234", stations:[6], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"}
+  {username:"גונתן", password:"1234", stations:[6], display:"גונתן · מנכ\"ל", ceo:true, email:"jonathan@gindi.co.il"},
+  {username:"חיתום", password:"1234", stations:[], display:"חיתום מסמכים", signingUser:true, email:"signing@gindi.co.il"}
 ];
 
 var testDocPath = "Z:\\ג'ונתן בנימין";
@@ -601,7 +613,7 @@ function doLogin(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
   document.getElementById("whoName").textContent = found.display;
-  viewMode = found.ceo ? "ceoHome" : "mine";
+  viewMode = found.signingUser ? "signing" : (found.ceo ? "ceoHome" : "mine");
   setupViewToggle();
   if(stateLoaded){
     applyView();
@@ -631,6 +643,11 @@ function bindViewToggleButton(btn){
 
 function setupViewToggle(){
   var toggle = document.getElementById("viewToggle");
+  if(currentUser.signingUser){
+    toggle.style.display = "none"; // signing user sees only the signing screen — nothing to toggle between
+    return;
+  }
+  toggle.style.display = "flex";
   var mineBtn = document.getElementById("viewBtnMine");
   mineBtn.textContent = currentUser.ceo ? "לאישור סופי" : "התחנה שלי";
   mineBtn.setAttribute("data-mode", currentUser.ceo ? "ceoHome" : "mine");
@@ -671,6 +688,9 @@ function applyView(){
   } else if(viewMode === "pricelist"){
     document.getElementById("pricelist-view").classList.add("active");
     renderPriceList();
+  } else if(viewMode === "signing"){
+    document.getElementById("signing-view").classList.add("active");
+    renderSigningRoot();
   } else {
     document.getElementById("cycle-view").classList.add("active");
     var mine = viewMode === "mine";
@@ -1719,6 +1739,200 @@ document.querySelectorAll(".seg button").forEach(function(btn){
     renderTab2();
   });
 });
+
+/* ---------- SIGNING (חיתום) ---------- */
+// Field-name -> Hebrew label, drives the "הוספת פרטי לקוח" popup. Global
+// across all document sets — confirmed with the client that every contract
+// uses the same anchor vocabulary even though document structure differs.
+var SIGNING_FIELDS = [
+  {key:"b1_name", label:"שם רוכש/ת ראשונ/ה"},
+  {key:"b1_id", label:"ת.ז. רוכש/ת ראשונ/ה"},
+  {key:"b1_phone", label:"נייד רוכש/ת ראשונ/ה"},
+  {key:"b2_name", label:"שם רוכש/ת שני/ה"},
+  {key:"b2_id", label:"ת.ז. רוכש/ת שני/ה"},
+  {key:"b2_phone", label:"נייד רוכש/ת שני/ה"},
+  {key:"buyers_email", label:"דוא\"ל"},
+  {key:"street_name", label:"רחוב"},
+  {key:"bld_num", label:"מספר בניין"},
+  {key:"apt_num", label:"מספר דירה"},
+  {key:"floor", label:"קומה"},
+  {key:"signed_at", label:"נחתם ב- (מיקום)"},
+  {key:"sign_day", label:"יום חתימה"},
+  {key:"sign_month", label:"חודש חתימה"},
+  {key:"sign_year", label:"שנת חתימה"},
+  {key:"buyer_attorney_name", label:"שם עורך דין"}
+];
+
+var signingCurrentFolder = null; // {id, name} of the folder currently drilled into, or null at root
+
+function signingApiGet(url){
+  return fetch(url).then(function(r){ return r.json(); });
+}
+
+function renderSigningRoot(){
+  signingCurrentFolder = null;
+  document.getElementById("signingBackBtn").style.display = "none";
+  document.getElementById("signingTitle").textContent = "חיתום מסמכים";
+  document.getElementById("signingSubtitle").textContent = "בחר תיקיית דירה כדי לראות ולמלא את מסמכי ההסכם שלה";
+  var body = document.getElementById("signingBody");
+  body.innerHTML = "טוען תיקיות…";
+  signingApiGet("/api/signing/list-drive").then(function(data){
+    if(!data.ok){ body.innerHTML = '<p style="color:var(--bad);">שגיאה בטעינת התיקיות מ-Drive: '+(data.error||"")+'</p>'; return; }
+    renderSigningFolderGrid(data.folders || []);
+  }).catch(function(){
+    body.innerHTML = '<p style="color:var(--bad);">שגיאת חיבור לשרת</p>';
+  });
+}
+
+function renderSigningFolderGrid(folders){
+  var body = document.getElementById("signingBody");
+  if(folders.length === 0){
+    body.innerHTML = '<div class="ceo-empty">לא נמצאו תיקיות בתיקיית השורש שהוגדרה ב-Drive</div>';
+    return;
+  }
+  var html = '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:12px;">';
+  folders.forEach(function(f){
+    html += '<div class="signing-folder-card" data-id="'+f.id+'" data-name="'+f.name.replace(/"/g,"&quot;")+'" style="border:1px solid var(--line-strong); border-radius:8px; padding:16px; cursor:pointer;">'+
+      '<div style="font-size:13.5px; font-weight:500;">📁 '+f.name+'</div>'+
+    '</div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  body.querySelectorAll(".signing-folder-card").forEach(function(card){
+    card.addEventListener("click", function(){
+      openSigningFolder(card.getAttribute("data-id"), card.getAttribute("data-name"));
+    });
+    card.addEventListener("mouseenter", function(){ card.style.borderColor = "var(--ink)"; });
+    card.addEventListener("mouseleave", function(){ card.style.borderColor = "var(--line-strong)"; });
+  });
+}
+
+function openSigningFolder(folderId, folderName){
+  signingCurrentFolder = {id: folderId, name: folderName};
+  document.getElementById("signingBackBtn").style.display = "inline-block";
+  document.getElementById("signingTitle").textContent = folderName;
+  document.getElementById("signingSubtitle").textContent = "מסמכי ההסכם בתיקייה זו";
+  var body = document.getElementById("signingBody");
+  body.innerHTML = "טוען מסמכים…";
+  signingApiGet("/api/signing/list-drive?folderId=" + encodeURIComponent(folderId)).then(function(data){
+    if(!data.ok){ body.innerHTML = '<p style="color:var(--bad);">שגיאה: '+(data.error||"")+'</p>'; return; }
+    renderSigningDocList(data.documents || [], data.folders || []);
+  }).catch(function(){
+    body.innerHTML = '<p style="color:var(--bad);">שגיאת חיבור לשרת</p>';
+  });
+}
+
+function renderSigningDocList(documents, subfolders){
+  var body = document.getElementById("signingBody");
+  var html = "";
+
+  html += '<div class="upload-box" style="justify-content:space-between;">'+
+    '<div class="txt">מלא את פרטי הרוכש/ים פעם אחת — הם יוצבו אוטומטית בכל המסמכים בתיקייה זו.</div>'+
+    '<button class="start-btn" id="signingFillBtn">הוספת פרטי לקוח ומילוי מסמכים</button>'+
+  '</div>';
+
+  if(subfolders.length){
+    html += '<div class="detail-title">תתי-תיקיות</div><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; margin-bottom:20px;">';
+    subfolders.forEach(function(f){
+      html += '<div class="signing-folder-card" data-id="'+f.id+'" data-name="'+f.name.replace(/"/g,"&quot;")+'" style="border:1px solid var(--line-strong); border-radius:8px; padding:12px; cursor:pointer; font-size:13px;">📁 '+f.name+'</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="detail-title">מסמכים ('+documents.length+')</div>';
+  if(documents.length === 0){
+    html += '<p style="color:var(--ink-faint); font-size:13px;">אין קובצי DOCX בתיקייה זו.</p>';
+  } else {
+    html += '<table><thead><tr><th>שם קובץ</th><th></th></tr></thead><tbody>';
+    documents.forEach(function(d){
+      html += '<tr><td>'+d.name+'</td><td style="text-align:left;"><a href="'+d.webViewLink+'" target="_blank" style="font-size:12.5px;">פתיחה ↗</a></td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  body.innerHTML = html;
+
+  body.querySelectorAll(".signing-folder-card").forEach(function(card){
+    card.addEventListener("click", function(){
+      openSigningFolder(card.getAttribute("data-id"), card.getAttribute("data-name"));
+    });
+  });
+  var fillBtn = document.getElementById("signingFillBtn");
+  if(fillBtn){
+    fillBtn.addEventListener("click", function(){ openSigningClientDetailsModal(documents); });
+  }
+}
+
+function openSigningClientDetailsModal(documents){
+  var fieldsHtml = SIGNING_FIELDS.map(function(f){
+    return '<div class="modal-field"><label>'+f.label+'</label><input type="text" id="sf_'+f.key+'" placeholder="—"></div>';
+  }).join("");
+  var html =
+    '<h3>פרטי לקוח — '+(signingCurrentFolder?signingCurrentFolder.name:"")+'</h3>'+
+    '<p>הפרטים יוצבו אוטומטית בכל '+documents.length+' המסמכים בתיקייה זו. שדות ריקים יישארו ריקים במסמך.</p>'+
+    '<div style="max-height:50vh; overflow-y:auto; padding-left:4px;">'+fieldsHtml+'</div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm">מילוי המסמכים</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+  document.getElementById("mConfirm").addEventListener("click", function(){
+    var fields = {};
+    SIGNING_FIELDS.forEach(function(f){
+      var v = document.getElementById("sf_"+f.key).value.trim();
+      if(v) fields[f.key] = v;
+    });
+    closeModal();
+    runSigningFill(documents, fields);
+  });
+}
+
+function runSigningFill(documents, fields){
+  var html =
+    '<h3>ממלא מסמכים…</h3>'+
+    '<div id="signingProgress" class="history-summary"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;" disabled>נא להמתין</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  var progress = document.getElementById("signingProgress");
+  var closeBtn = document.getElementById("mCancel");
+
+  function addLine(text, ok){
+    var line = document.createElement("div");
+    line.className = "hs-line";
+    line.innerHTML = '<span class="hs-dot" style="background:'+(ok?"var(--ok)":"var(--bad)")+';"></span><div>'+text+'</div>';
+    progress.appendChild(line);
+  }
+
+  var i = 0;
+  function next(){
+    if(i >= documents.length){
+      closeBtn.disabled = false;
+      closeBtn.textContent = "סגור";
+      closeBtn.addEventListener("click", function(){ openSigningFolder(signingCurrentFolder.id, signingCurrentFolder.name); });
+      return;
+    }
+    var doc = documents[i];
+    addLine("ממלא: " + doc.name + " …", true);
+    fetch("/api/signing/fill-contract", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({fileId: doc.id, fields: fields})
+    }).then(function(r){ return r.json(); }).then(function(data){
+      if(data.ok){
+        addLine("הושלם: " + data.name + ' — <a href="'+data.viewUrl+'" target="_blank">פתיחה ↗</a>', true);
+      } else {
+        addLine("שגיאה ב-" + doc.name + ": " + (data.error || "לא ידוע"), false);
+      }
+    }).catch(function(){
+      addLine("שגיאת חיבור ב-" + doc.name, false);
+    }).finally(function(){
+      i++;
+      next();
+    });
+  }
+  next();
+}
+
+document.getElementById("signingBackBtn").addEventListener("click", renderSigningRoot);
 </script>
 </body>
 </html>
