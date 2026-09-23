@@ -1595,16 +1595,33 @@ function fmtIls(n){
   return "₪" + Number(n).toLocaleString("he-IL");
 }
 
+function priceCompareSentence(actual, compareTo, compareLabel){
+  var diff = Number(actual) - Number(compareTo);
+  if(diff === 0) return "מחיר המכירה תואם בדיוק ל" + compareLabel;
+  var dir = diff > 0 ? "גבוה" : "נמוך";
+  return "מחיר המכירה " + dir + " ב-" + fmtIls(Math.abs(diff)) + " מ" + compareLabel;
+}
+
 function priceDetailsLineHtml(r){
   if(!canSeePricing()) return "";
   var hasList = r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
   var hasFloor = r.floorPriceEntered !== undefined && r.floorPriceEntered !== null && r.floorPriceEntered !== "";
-  if(!hasList && !hasFloor) return "";
+  var hasActual = r.actualSalePrice !== undefined && r.actualSalePrice !== null && r.actualSalePrice !== "";
+  if(!hasList && !hasFloor && !hasActual) return "";
   var parts = [];
   if(hasList) parts.push("מחירון: " + fmtIls(r.listPriceEntered));
   if(hasFloor) parts.push("מחיר סף: " + fmtIls(r.floorPriceEntered));
   if(hasList && hasFloor) parts.push("הפרש: " + fmtIls(Number(r.listPriceEntered) - Number(r.floorPriceEntered)));
-  return '<div class="ceo-row-sub" style="margin-top:2px;">' + parts.join(" &nbsp;·&nbsp; ") + '</div>';
+  if(hasActual) parts.push("מחיר מכירה בפועל: " + fmtIls(r.actualSalePrice));
+  var html = '<div class="ceo-row-sub" style="margin-top:2px;">' + parts.join(" &nbsp;·&nbsp; ") + '</div>';
+
+  var insights = [];
+  if(hasActual && hasFloor) insights.push(priceCompareSentence(r.actualSalePrice, r.floorPriceEntered, "מחיר הסף"));
+  if(hasActual && hasList) insights.push(priceCompareSentence(r.actualSalePrice, r.listPriceEntered, "מחיר המחירון"));
+  if(insights.length){
+    html += '<div class="ceo-row-sub" style="margin-top:2px; font-style:italic;">' + insights.join(" &nbsp;·&nbsp; ") + '</div>';
+  }
+  return html;
 }
 
 function getUnitPriceStatus(unit){
