@@ -469,6 +469,10 @@ var checklists = {
   0: [
     {type:"text", label:"אסמכתא משרד השיכון"}
   ],
+  1: [
+    {type:"text", label:"טקסט הטבת שיווק", field:"marketingBenefitText"},
+    {type:"number", label:"ערך הטבת שיווק (₪)", field:"marketingBenefitValue"}
+  ],
   3: [
     {type:"text+toggle", label:"מספר מחסנים שנרכשו", toggleLabel:"עודכן במערכות"},
     {type:"text+toggle", label:"מספר חניות שנרכשו", toggleLabel:"עודכן במערכות"},
@@ -476,10 +480,9 @@ var checklists = {
     {type:"upload", label:"העלאת מצב חשבון (צילום מסך / קובץ)", field:"accountStatusUrl"}
   ],
   4: [
-    {type:"number", label:"מחיר מחירון", field:"listPriceEntered"},
     {type:"number", label:"מחיר סף", field:"floorPriceEntered"},
     {type:"number", label:"מחיר מכירה בפועל", field:"actualSalePrice"},
-    {type:"text", label:"הפרש ממחיר הסף"},
+    {type:"computed-diff", label:"פער ממחיר הסף (לאחר קיזוז הטבת שיווק)", field:"priceGapAfterMarketing", opField:"actualSalePrice", baseField:"floorPriceEntered", offsetField:"marketingBenefitValue"},
     {type:"toggle", label:"מצ\"ח תואם לנספח התשלומים בהסכם המכר"}
   ]
 };
@@ -865,6 +868,9 @@ function openApproveModal(r, stageIndex, opts){
       } else if(item.type === "link"){
         checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
           '<input type="url" class="cl-input mClText" data-i="'+i+'" placeholder="https://drive.google.com/…" style="width:190px;"></div>';
+      } else if(item.type === "computed-diff"){
+        checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
+          '<span class="cl-computed" id="mClComputed_'+i+'" style="font-weight:600;">—</span></div>';
       } else {
         checklistHtml += '<div class="checklist-row"><span class="cl-label">'+item.label+'</span>'+
           '<input type="text" class="cl-input mClText" data-i="'+i+'" placeholder="—"></div>';
@@ -921,6 +927,41 @@ function openApproveModal(r, stageIndex, opts){
         reader.readAsDataURL(file);
       });
     });
+    var findFieldIndex = function(fieldName){
+      var found = -1;
+      checklist.forEach(function(it,i){ if(it.field === fieldName) found = i; });
+      return found;
+    };
+    var readFieldValue = function(fieldName){
+      var idx = findFieldIndex(fieldName);
+      if(idx >= 0){
+        var el = document.querySelector('.mClText[data-i="'+idx+'"]');
+        if(el && el.value.trim() !== "") return Number(el.value);
+        return null;
+      }
+      if(r[fieldName] !== undefined && r[fieldName] !== null && r[fieldName] !== "") return Number(r[fieldName]);
+      return null;
+    };
+    var computeDiffForItem = function(item){
+      var opVal = readFieldValue(item.opField);
+      var baseVal = readFieldValue(item.baseField);
+      var offsetVal = item.offsetField ? (readFieldValue(item.offsetField) || 0) : 0;
+      if(opVal === null || baseVal === null) return null;
+      return (opVal - offsetVal) - baseVal;
+    };
+    var refreshComputedDiffs = function(){
+      checklist.forEach(function(item,i){
+        if(item.type !== "computed-diff") return;
+        var span = document.getElementById("mClComputed_"+i);
+        if(!span) return;
+        var diff = computeDiffForItem(item);
+        if(diff === null){ span.textContent = "—"; span.style.color = ""; return; }
+        var sign = diff > 0 ? "+" : (diff < 0 ? "−" : "");
+        span.textContent = sign + fmtIls(Math.abs(diff));
+        span.style.color = diff >= 0 ? "var(--ok)" : "var(--bad)";
+      });
+    };
+    refreshComputedDiffs();
     var checkComplete = function(){
       var complete = checklist.every(function(item,i){
         if(item.type === "toggle"){
@@ -935,10 +976,14 @@ function openApproveModal(r, stageIndex, opts){
         if(item.type === "upload"){
           return !!uploadedFiles[i];
         }
+        if(item.type === "computed-diff"){
+          return true;
+        }
         var input = document.querySelector('.mClText[data-i="'+i+'"]');
         return input && input.value.trim() !== "";
       });
       confirmBtn.disabled = !complete;
+      refreshComputedDiffs();
     };
     document.querySelectorAll(".mClToggle").forEach(function(el){ el.addEventListener("change", checkComplete); });
     document.querySelectorAll(".mClText").forEach(function(el){ el.addEventListener("input", checkComplete); });
@@ -956,12 +1001,16 @@ function openApproveModal(r, stageIndex, opts){
           val = "בוצע";
         } else if(item.type === "upload"){
           val = uploadedFiles[i] ? uploadedFiles[i].name : "";
+        } else if(item.type === "computed-diff"){
+          var diff = computeDiffForItem(item);
+          val = diff === null ? "—" : (diff > 0 ? "+" : (diff < 0 ? "−" : "")) + fmtIls(Math.abs(diff));
         } else {
           val = document.querySelector('.mClText[data-i="'+i+'"]').value.trim();
         }
         if(item.field){
           if(item.type === "number") r[item.field] = Number(val);
           else if(item.type === "upload") r[item.field] = uploadedFiles[i] ? uploadedFiles[i].url : "";
+          else if(item.type === "computed-diff") r[item.field] = (val === "—") ? null : val;
           else r[item.field] = val;
         }
         if(item.type === "text+toggle"){ return item.label+": "+val+" ("+item.toggleLabel+" ✓)"; }
@@ -1551,10 +1600,14 @@ function renderTab3(){
 function getCasePriceStatus(r){
   var unit = allUnits.filter(function(u){ return u.unitKey === r.unitKey; })[0];
   if(!unit || !unit.price) return {state:"nodata"};
-  if(r.listPriceEntered === undefined || r.listPriceEntered === null || r.listPriceEntered === ""){
+  var hasFloor = r.floorPriceEntered !== undefined && r.floorPriceEntered !== null && r.floorPriceEntered !== "";
+  var hasActual = r.actualSalePrice !== undefined && r.actualSalePrice !== null && r.actualSalePrice !== "";
+  if(!hasFloor || !hasActual){
     return {state:"pending"};
   }
-  var ok = Number(r.listPriceEntered) === Number(unit.price);
+  var marketing = Number(r.marketingBenefitValue) || 0;
+  var netPrice = Number(r.actualSalePrice) - marketing;
+  var ok = netPrice >= Number(r.floorPriceEntered);
   if(!ok && r.checkCur > CEO_STATION_INDEX){
     return {state:"override", listPrice:unit.price};
   }
@@ -1568,9 +1621,9 @@ function priceStatusBadgeHtml(r){
   if(!canSeePricing()) return "";
   var st = getCasePriceStatus(r);
   var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
-  var label = st.state === "ok" ? "תקין — תואם למחירון"
-    : st.state === "mismatch" ? "לא תקין — אי-התאמה"
-    : st.state === "override" ? "אושר עי מנכ\"ל למרות אי-התאמה"
+  var label = st.state === "ok" ? "תקין — מחיר בפועל (נטו) עומד במחיר הסף"
+    : st.state === "mismatch" ? "לא תקין — מחיר בפועל (נטו) מתחת למחיר הסף"
+    : st.state === "override" ? "אושר עי מנכ\"ל למרות שהוא מתחת למחיר הסף"
     : st.state === "pending" ? "טרם דווח מחיר בסבב"
     : "אין נתון מחירון לדירה זו";
   return '<div class="status" style="margin-top:5px;"><span class="dot '+dot+'"></span>'+label+'</div>';
@@ -1578,11 +1631,11 @@ function priceStatusBadgeHtml(r){
 function priceStatusDotColorAndLabel(r){
   var st = getCasePriceStatus(r);
   var dot = st.state === "ok" ? "ok" : st.state === "mismatch" ? "bad" : st.state === "override" ? "warn" : "neutral";
-  var label = st.state === "ok" ? "מחירון: תקין — תואם למחירון"
-    : st.state === "mismatch" ? "מחירון: לא תקין — אי-התאמה"
-    : st.state === "override" ? "מחירון: אושר עי מנכ\"ל למרות אי-התאמה"
-    : st.state === "pending" ? "מחירון: טרם דווח מחיר בסבב"
-    : "מחירון: אין נתון לדירה זו";
+  var label = st.state === "ok" ? "מחיר: תקין — נטו עומד במחיר הסף"
+    : st.state === "mismatch" ? "מחיר: לא תקין — נטו מתחת למחיר הסף"
+    : st.state === "override" ? "מחיר: אושר עי מנכ\"ל למרות אי-עמידה בסף"
+    : st.state === "pending" ? "מחיר: טרם דווח מחיר בסבב"
+    : "מחיר: אין נתון לדירה זו";
   return {dot:dot, label:label};
 }
 function priceStatusDotHtml(r){
@@ -1604,20 +1657,30 @@ function priceCompareSentence(actual, compareTo, compareLabel){
 
 function priceDetailsLineHtml(r){
   if(!canSeePricing()) return "";
-  var hasList = r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
+  var unit = allUnits.filter(function(u){ return u.unitKey === r.unitKey; })[0];
+  var hasList = unit && unit.price !== undefined && unit.price !== null && unit.price !== "";
   var hasFloor = r.floorPriceEntered !== undefined && r.floorPriceEntered !== null && r.floorPriceEntered !== "";
   var hasActual = r.actualSalePrice !== undefined && r.actualSalePrice !== null && r.actualSalePrice !== "";
-  if(!hasList && !hasFloor && !hasActual) return "";
+  var hasMarketing = r.marketingBenefitValue !== undefined && r.marketingBenefitValue !== null && r.marketingBenefitValue !== "";
+  if(!hasList && !hasFloor && !hasActual && !hasMarketing) return "";
   var parts = [];
-  if(hasList) parts.push("מחירון: " + fmtIls(r.listPriceEntered));
+  if(hasList) parts.push("מחירון: " + fmtIls(unit.price));
   if(hasFloor) parts.push("מחיר סף: " + fmtIls(r.floorPriceEntered));
-  if(hasList && hasFloor) parts.push("הפרש: " + fmtIls(Number(r.listPriceEntered) - Number(r.floorPriceEntered)));
+  if(hasList && hasFloor) parts.push("הפרש: " + fmtIls(Number(unit.price) - Number(r.floorPriceEntered)));
   if(hasActual) parts.push("מחיר מכירה בפועל: " + fmtIls(r.actualSalePrice));
+  if(hasMarketing){
+    var mText = r.marketingBenefitText ? (" — " + r.marketingBenefitText) : "";
+    parts.push("הטבת שיווק: " + fmtIls(r.marketingBenefitValue) + mText);
+  }
   var html = '<div class="ceo-row-sub" style="margin-top:2px;">' + parts.join(" &nbsp;·&nbsp; ") + '</div>';
 
   var insights = [];
-  if(hasActual && hasFloor) insights.push(priceCompareSentence(r.actualSalePrice, r.floorPriceEntered, "מחיר הסף"));
-  if(hasActual && hasList) insights.push(priceCompareSentence(r.actualSalePrice, r.listPriceEntered, "מחיר המחירון"));
+  if(hasActual){
+    var marketing = hasMarketing ? Number(r.marketingBenefitValue) : 0;
+    var netActual = Number(r.actualSalePrice) - marketing;
+    if(hasFloor) insights.push(priceCompareSentence(netActual, r.floorPriceEntered, "מחיר הסף" + (marketing ? " (נטו לאחר קיזוז הטבת שיווק)" : "")));
+    if(hasList) insights.push(priceCompareSentence(r.actualSalePrice, unit.price, "מחיר המחירון"));
+  }
   if(insights.length){
     html += '<div class="ceo-row-sub" style="margin-top:2px; font-style:italic;">' + insights.join(" &nbsp;·&nbsp; ") + '</div>';
   }
@@ -1626,14 +1689,18 @@ function priceDetailsLineHtml(r){
 
 function getUnitPriceStatus(unit){
   var match = reviewData.filter(function(r){
-    return r.unitKey === unit.unitKey && r.listPriceEntered !== undefined && r.listPriceEntered !== null && r.listPriceEntered !== "";
+    return r.unitKey === unit.unitKey &&
+      r.floorPriceEntered !== undefined && r.floorPriceEntered !== null && r.floorPriceEntered !== "" &&
+      r.actualSalePrice !== undefined && r.actualSalePrice !== null && r.actualSalePrice !== "";
   })[0];
   if(!match) return {state:"pending"};
-  var ok = Number(match.listPriceEntered) === Number(unit.price);
+  var marketing = Number(match.marketingBenefitValue) || 0;
+  var netPrice = Number(match.actualSalePrice) - marketing;
+  var ok = netPrice >= Number(match.floorPriceEntered);
   if(!ok && match.checkCur > CEO_STATION_INDEX){
-    return {state:"override", caseId:match.id, entered:match.listPriceEntered};
+    return {state:"override", caseId:match.id, entered:match.actualSalePrice};
   }
-  return {state: ok ? "ok" : "mismatch", caseId:match.id, entered:match.listPriceEntered};
+  return {state: ok ? "ok" : "mismatch", caseId:match.id, entered:match.actualSalePrice};
 }
 
 function renderPriceList(){
