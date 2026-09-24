@@ -1851,13 +1851,13 @@ function openSigningFolder(folderId, folderName){
   body.innerHTML = "טוען מסמכים…";
   signingApiGet("/api/signing/list-drive?folderId=" + encodeURIComponent(folderId)).then(function(data){
     if(!data.ok){ body.innerHTML = '<p style="color:var(--bad);">שגיאה: '+(data.error||"")+'</p>'; return; }
-    renderSigningDocList(data.documents || [], data.folders || []);
+    renderSigningDocList(data.documents || [], data.folders || [], data.previousOutputs || []);
   }).catch(function(){
     body.innerHTML = '<p style="color:var(--bad);">שגיאת חיבור לשרת</p>';
   });
 }
 
-function renderSigningDocList(documents, subfolders){
+function renderSigningDocList(documents, subfolders, previousOutputs){
   var body = document.getElementById("signingBody");
   var html = "";
 
@@ -1865,6 +1865,13 @@ function renderSigningDocList(documents, subfolders){
     '<div class="txt">מלא את פרטי הרוכש/ים פעם אחת — הם יוצבו אוטומטית בכל המסמכים בתיקייה זו.</div>'+
     '<button class="start-btn" id="signingFillBtn">הוספת פרטי לקוח ומילוי מסמכים</button>'+
   '</div>';
+
+  if(previousOutputs.length){
+    html += '<div class="upload-box" style="justify-content:space-between; margin-top:10px; background:var(--ok-bg,#eef7f0);">'+
+      '<div class="txt">קובץ ממוזג וממולא קיים: '+previousOutputs[0].name+' — אפשר להתחיל חתימה.</div>'+
+      '<button class="start-btn" id="signingStartBtn">התחלת חתימה</button>'+
+    '</div>';
+  }
 
   if(subfolders.length){
     html += '<div class="detail-title">תתי-תיקיות</div><div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:10px; margin-bottom:20px;">';
@@ -1895,6 +1902,10 @@ function renderSigningDocList(documents, subfolders){
   if(fillBtn){
     fillBtn.addEventListener("click", function(){ openSigningClientDetailsModal(documents); });
   }
+  var startBtn = document.getElementById("signingStartBtn");
+  if(startBtn){
+    startBtn.addEventListener("click", function(){ openSigningCaptureModal(previousOutputs[0]); });
+  }
 }
 
 function openSigningClientDetailsModal(documents){
@@ -1917,6 +1928,152 @@ function openSigningClientDetailsModal(documents){
     });
     closeModal();
     runSigningFill(documents, fields);
+  });
+}
+
+function setupSignaturePad(canvas){
+  var ctx = canvas.getContext("2d");
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#1a1aab";
+  var drawing = false;
+  function pos(e){
+    var rect = canvas.getBoundingClientRect();
+    var cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    var cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return {x: cx * (canvas.width/rect.width), y: cy * (canvas.height/rect.height)};
+  }
+  function start(e){ drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing = false; }
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", end);
+  canvas.addEventListener("touchstart", start);
+  canvas.addEventListener("touchmove", move);
+  canvas.addEventListener("touchend", end);
+}
+
+function clearCanvas(canvas){
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function todayDdMmYyyy(){
+  var d = new Date();
+  return d.getDate() + "." + (d.getMonth()+1) + "." + d.getFullYear();
+}
+
+function openSigningCaptureModal(mergedFile){
+  var today = todayDdMmYyyy();
+  var html =
+    '<h3>חתימה — '+(signingCurrentFolder?signingCurrentFolder.name:"")+'</h3>'+
+    '<div class="modal-field"><label>כמות חותמים</label>'+
+      '<select id="capSignerCount"><option value="1">רוכש אחד</option><option value="2" selected>שני רוכשים</option></select></div>'+
+    '<div class="modal-field" id="capTogetherWrap"><label>אופן החתימה</label>'+
+      '<select id="capTogether"><option value="together">חותמים יחד (אותה חתימה לשניהם)</option><option value="separate">כל אחד חותם בנפרד</option></select></div>'+
+    '<div class="modal-field"><label>תאריך חתימה</label><input type="text" id="capDate" value="'+today+'"></div>'+
+    '<div class="modal-field"><label>חותמת גינדי (קובץ תמונה)</label><input type="file" id="capStampFile" accept="image/*"></div>'+
+    '<div id="capSigPads"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel">ביטול</button><button class="modal-confirm" id="mConfirm">סיום וחתימה</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  document.getElementById("mCancel").addEventListener("click", closeModal);
+
+  function renderPads(){
+    var count = document.getElementById("capSignerCount").value;
+    var together = document.getElementById("capTogether").value;
+    document.getElementById("capTogetherWrap").style.display = (count === "2") ? "block" : "none";
+    var padsNeeded = (count === "2" && together === "separate") ? 2 : 1;
+    var wrap = document.getElementById("capSigPads");
+    var padsHtml = "";
+    for(var i=0; i<padsNeeded; i++){
+      var label = padsNeeded === 2 ? ("חתימת רוכש " + (i+1)) : "חתימה";
+      padsHtml += '<div class="modal-field"><label>'+label+'</label>'+
+        '<canvas id="capCanvas'+i+'" width="500" height="150" style="border:1px solid var(--line-strong); border-radius:6px; width:100%; touch-action:none; background:#fff;"></canvas>'+
+        '<button type="button" class="modal-cancel" style="margin-top:4px; font-size:12px;" id="capClear'+i+'">נקה</button>'+
+      '</div>';
+    }
+    wrap.innerHTML = padsHtml;
+    for(var j=0; j<padsNeeded; j++){
+      (function(idx){
+        var c = document.getElementById("capCanvas"+idx);
+        setupSignaturePad(c);
+        document.getElementById("capClear"+idx).addEventListener("click", function(){ clearCanvas(c); });
+      })(j);
+    }
+  }
+  renderPads();
+  document.getElementById("capSignerCount").addEventListener("change", renderPads);
+  document.getElementById("capTogether").addEventListener("change", renderPads);
+
+  document.getElementById("mConfirm").addEventListener("click", function(){
+    var count = document.getElementById("capSignerCount").value;
+    var together = document.getElementById("capTogether").value;
+    var dateVal = document.getElementById("capDate").value.trim();
+    var stampFileInput = document.getElementById("capStampFile");
+
+    var canvas0 = document.getElementById("capCanvas0");
+    var sig1 = canvas0.toDataURL("image/png");
+    var sig2;
+    if(count === "2" && together === "separate"){
+      sig2 = document.getElementById("capCanvas1").toDataURL("image/png");
+    } else {
+      sig2 = sig1; // together, or only one signer — same image in both slots
+    }
+
+    function proceed(stampDataUrl){
+      closeModal();
+      runApplySignatures(mergedFile, sig1, sig2, stampDataUrl, dateVal);
+    }
+
+    if(stampFileInput.files && stampFileInput.files[0]){
+      var reader = new FileReader();
+      reader.onload = function(){ proceed(reader.result); };
+      reader.readAsDataURL(stampFileInput.files[0]);
+    } else {
+      proceed(null);
+    }
+  });
+}
+
+function runApplySignatures(mergedFile, sig1, sig2, stampDataUrl, dateVal){
+  var html =
+    '<h3>מחתים את המסמך…</h3>'+
+    '<div id="signingProgress" class="history-summary"></div>'+
+    '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;">סגור</button></div>';
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("active");
+  var progress = document.getElementById("signingProgress");
+  var closeBtn = document.getElementById("mCancel");
+  closeBtn.addEventListener("click", function(){
+    closeModal();
+    openSigningFolder(signingCurrentFolder.id, signingCurrentFolder.name);
+  });
+  function addLine(text, ok){
+    var line = document.createElement("div");
+    line.className = "hs-line";
+    line.innerHTML = '<span class="hs-dot" style="background:'+(ok?"var(--ok)":"var(--bad)")+';"></span><div>'+text+'</div>';
+    progress.appendChild(line);
+  }
+  addLine("מעלה חתימות ומעדכן את המסמך…", true);
+  fetch("/api/signing/apply-signatures", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      fileId: mergedFile.id,
+      signature1: sig1,
+      signature2: sig2,
+      stamp: stampDataUrl,
+      date: dateVal
+    })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data.ok){
+      addLine('הושלם: '+data.name+' — <a href="'+data.viewUrl+'" target="_blank">פתיחה ↗</a>', true);
+    } else {
+      addLine("שגיאה: " + (data.error || "לא ידוע"), false);
+    }
+  }).catch(function(){
+    addLine("שגיאת חיבור לשרת", false);
   });
 }
 
