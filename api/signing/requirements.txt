@@ -2,4 +2,4 @@ lxml
 requests
 pymupdf
 python-bidi
-Pillow
+Pillow==10.4.0
