@@ -1,2 +1,5 @@
 lxml
 requests
+pymupdf
+python-bidi
+Pillow
