@@ -4,5 +4,10 @@
       "path": "/api/cron/cycle-alerts",
       "schedule": "0 6 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/signing/fill-contract-pdf.py": {
+      "includeFiles": "api/signing/fonts/**"
+    }
+  }
 }

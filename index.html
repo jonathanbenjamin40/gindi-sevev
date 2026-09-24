@@ -1922,7 +1922,7 @@ function openSigningClientDetailsModal(documents){
 
 function runSigningFill(documents, fields){
   var html =
-    '<h3>ממלא מסמכים…</h3>'+
+    '<h3>ממלא ומאחד מסמכים…</h3>'+
     '<div id="signingProgress" class="history-summary"></div>'+
     '<div class="modal-actions"><button class="modal-cancel" id="mCancel" style="flex:1;">סגור (הריצה תמשיך ברקע)</button></div>';
   document.getElementById("modalBox").innerHTML = html;
@@ -1941,32 +1941,29 @@ function runSigningFill(documents, fields){
     progress.appendChild(line);
   }
 
-  var i = 0;
-  function next(){
-    if(i >= documents.length){
-      closeBtn.textContent = "סגור";
-      return;
+  addLine("ממלא " + documents.length + " מסמכים ומאחד לקובץ אחד — זה יכול לקחת רגע…", true);
+  fetch("/api/signing/fill-contract-pdf", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      fileIds: documents.map(function(d){ return d.id; }),
+      folderName: signingCurrentFolder ? signingCurrentFolder.name : "מסמכים",
+      fields: fields
+    })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data.ok){
+      (data.perFile || []).forEach(function(pf){
+        addLine(pf.name + " — " + pf.replacedCount + " שדות מולאו", true);
+      });
+      addLine('הקובץ המאוחד מוכן: ' + data.name + ' — <a href="'+data.viewUrl+'" target="_blank">פתיחה ↗</a>', true);
+    } else {
+      addLine("שגיאה: " + (data.error || "לא ידוע"), false);
     }
-    var doc = documents[i];
-    addLine("ממלא: " + doc.name + " …", true);
-    fetch("/api/signing/fill-contract", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({fileId: doc.id, fields: fields})
-    }).then(function(r){ return r.json(); }).then(function(data){
-      if(data.ok){
-        addLine("הושלם: " + data.name + ' — <a href="'+data.viewUrl+'" target="_blank">פתיחה ↗</a>', true);
-      } else {
-        addLine("שגיאה ב-" + doc.name + ": " + (data.error || "לא ידוע"), false);
-      }
-    }).catch(function(){
-      addLine("שגיאת חיבור ב-" + doc.name, false);
-    }).finally(function(){
-      i++;
-      next();
-    });
-  }
-  next();
+    closeBtn.textContent = "סגור";
+  }).catch(function(){
+    addLine("שגיאת חיבור לשרת", false);
+    closeBtn.textContent = "סגור";
+  });
 }
 
 document.getElementById("signingBackBtn").addEventListener("click", renderSigningRoot);
